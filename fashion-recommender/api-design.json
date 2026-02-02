@@ -1,170 +1,293 @@
 {
   "project": "AI-Powered Fashion Outfit Recommender",
   "version": "1.0.0",
-  "description": "API design for the fashion outfit recommender system.",
+  "description": "API design for the fashion outfit recommender system, covering all project entities and flows.",
+  "entities": {
+    "User": {
+      "id": "string",
+      "name": "string",
+      "email": "string",
+      "preferences": "object (optional)",
+      "createdAt": "date"
+    },
+    "Product": {
+      "id": "string",
+      "name": "string",
+      "category": "string",
+      "description": "string",
+      "price": "number",
+      "imageUrl": "string",
+      "tags": "array<string>",
+      "stock": "number"
+    },
+    "Recommendation": {
+      "id": "string",
+      "inputProductId": "string",
+      "generatedOutfit": "Outfit",
+      "aiReasoning": "string",
+      "createdAt": "date"
+    },
+    "Outfit": {
+      "id": "string",
+      "items": "array<Product>",
+      "styleType": "string",
+      "totalPrice": "number"
+    }
+  },
   "apis": [
     {
-      "name": "Get All Products",
-      "endpoint": "/api/products",
-      "method": "GET",
-      "description": "Fetches a list of all available fashion products.",
-      "request": {},
-      "response": {
-        "success": true,
-        "count": 10,
-        "data": [
-          {
-            "_id": "65bd8a...",
-            "name": "Classic White Shirt",
-            "description": "A timeless white button-down shirt.",
-            "price": 49.99,
-            "category": "shirt",
-            "brand": "FashionCo",
-            "imageUrl": "/images/white-shirt.jpg",
-            "tags": ["formal", "white", "cotton"],
-            "stock": 100,
-            "createdAt": "2024-02-02T10:00:00.000Z"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Get Single Product",
-      "endpoint": "/api/products/:id",
-      "method": "GET",
-      "description": "Fetches details of a specific product by ID.",
-      "request": {
-        "params": {
-          "id": "65bd8a..."
-        }
-      },
-      "response": {
-        "success": true,
-        "data": {
-          "_id": "65bd8a...",
-          "name": "Classic White Shirt",
-          "description": "A timeless white button-down shirt.",
-          "price": 49.99,
-          "category": "shirt",
-          "brand": "FashionCo",
-          "imageUrl": "/images/white-shirt.jpg",
-          "tags": ["formal", "white", "cotton"],
-          "stock": 100,
-          "createdAt": "2024-02-02T10:00:00.000Z"
-        }
-      }
-    },
-    {
-      "name": "Get Outfit Recommendation",
-      "endpoint": "/api/recommend",
-      "method": "POST",
-      "description": "Generates an AI-based outfit recommendation for a selected product.",
-      "request": {
-        "body": {
-          "product": {
-            "name": "Classic White Shirt",
-            "category": "shirt",
-            "description": "A timeless white button-down shirt.",
-            "tags": ["formal", "white"]
-          }
-        }
-      },
-      "response": {
-        "outfit": [
-          {
-            "name": "Navy Blue Chinos",
-            "category": "pants",
-            "reason": "Contrasts well with the white shirt for a smart-casual look.",
-            "imageUrl": "/images/navy-chinos.jpg",
-            "price": 59.99
-          },
-          {
-            "name": "Brown Leather Loafers",
-            "category": "shoes",
-            "reason": "Adds a touch of elegance to the outfit.",
-            "imageUrl": "/images/loafers.jpg",
-            "price": 89.99
-          },
-          {
-            "name": "Silver Watch",
-            "category": "accessory",
-            "reason": "A subtle accessory to complete the look.",
-            "imageUrl": "/images/watch.jpg",
-            "price": 120.00
-          }
-        ],
-        "styleAdvice": "This outfit is perfect for business casual events or a dinner date."
-      }
-    },
-    {
-      "name": "Get Collections",
-      "endpoint": "/api/collections",
-      "method": "GET",
-      "description": "Fetches all curated collections.",
-      "request": {},
-      "response": {
-        "success": true,
-        "data": [
-          {
-            "_id": "col123...",
-            "name": "Summer Essentials",
-            "slug": "summer-essentials",
-            "description": "Must-have items for the summer season.",
-            "imageUrl": "/images/summer-collection.jpg",
-            "featured": true
-          }
-        ]
-      }
-    },
-    {
-      "name": "Checkout",
-      "endpoint": "/api/checkout",
-      "method": "POST",
-      "description": "Processes a checkout for items in the cart.",
-      "request": {
-        "body": {
-          "userEmail": "user@example.com",
-          "items": [
-            {
-              "productId": "65bd8a...",
-              "quantity": 1,
-              "price": 49.99
+      "group": "Authentication",
+      "endpoints": [
+        {
+          "name": "User Signup",
+          "endpoint": "/api/auth/signup",
+          "method": "POST",
+          "description": "Register a new user.",
+          "request": {
+            "body": {
+              "name": "John Doe",
+              "email": "john@example.com",
+              "password": "securepassword123"
             }
-          ],
-          "total": 49.99
+          },
+          "response": {
+            "success": true,
+            "message": "User registered successfully",
+            "data": {
+              "user": {
+                "_id": "user_123",
+                "name": "John Doe",
+                "email": "john@example.com"
+              }
+            }
+          }
+        },
+        {
+          "name": "User Login",
+          "endpoint": "/api/auth/login",
+          "method": "POST",
+          "description": "Authenticate existing user.",
+          "request": {
+            "body": {
+              "email": "john@example.com",
+              "password": "securepassword123"
+            }
+          },
+          "response": {
+            "success": true,
+            "token": "jwt_token_example",
+            "data": {
+              "user": {
+                "_id": "user_123",
+                "name": "John Doe",
+                "email": "john@example.com"
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "endpoint": "/api/auth/me",
+          "method": "GET",
+          "description": "Get profile of currently logged-in user.",
+          "headers": {
+            "Authorization": "Bearer <token>"
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "_id": "user_123",
+              "name": "John Doe",
+              "email": "john@example.com",
+              "preferences": {
+                "favoriteStyles": ["casual", "minimalist"]
+              }
+            }
+          }
         }
-      },
-      "response": {
-        "success": true,
-        "message": "Order placed successfully",
-        "data": {
-          "orderId": "ORD-1706868000000-123",
-          "total": 49.99,
-          "status": "confirmed",
-          "itemsCount": 1
-        }
-      }
+      ]
     },
     {
-      "name": "User Signup",
-      "endpoint": "/api/auth/signup",
-      "method": "POST",
-      "description": "Registers a new user.",
-      "request": {
-        "body": {
-          "name": "John Doe",
-          "email": "john@example.com",
-          "password": "securepassword123"
+      "group": "Products",
+      "endpoints": [
+        {
+          "name": "Get All Products",
+          "endpoint": "/api/products",
+          "method": "GET",
+          "description": "Fetch all products with optional filtering.",
+          "query_params": {
+            "category": "string (optional)",
+            "search": "string (optional)"
+          },
+          "response": {
+            "success": true,
+            "count": 10,
+            "data": [
+              {
+                "_id": "p_001",
+                "name": "Classic White Shirt",
+                "category": "shirt",
+                "price": 49.99,
+                "imageUrl": "/images/white-shirt.jpg"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Single Product",
+          "endpoint": "/api/products/:id",
+          "method": "GET",
+          "description": "Get detailed info for a specific product.",
+          "params": {
+            "id": "p_001"
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "_id": "p_001",
+              "name": "Classic White Shirt",
+              "description": "A timeless cotton shirt.",
+              "price": 49.99,
+              "category": "shirt",
+              "imageUrl": "/images/white-shirt.jpg",
+              "stock": 50,
+              "tags": ["formal", "white"]
+            }
+          }
         }
-      },
-      "response": {
-        "message": "User created successfully",
-        "user": {
-          "name": "John Doe",
-          "email": "john@example.com",
-          "_id": "user789..."
+      ]
+    },
+    {
+      "group": "Recommendations",
+      "endpoints": [
+        {
+          "name": "Generate Outfit",
+          "endpoint": "/api/recommend",
+          "method": "POST",
+          "description": "AI analyzes the input product and suggests a matching outfit.",
+          "request": {
+            "body": {
+              "productId": "p_001",
+              "context": "casual dinner (optional)"
+            }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "recommendationId": "rec_999",
+              "inputProduct": {
+                "_id": "p_001",
+                "name": "Classic White Shirt"
+              },
+              "outfit": [
+                {
+                  "_id": "p_005",
+                  "name": "Navy Chinos",
+                  "category": "pants",
+                  "reason": "Contrasts well with white."
+                },
+                {
+                  "_id": "p_008",
+                  "name": "Brown Loafers",
+                  "category": "shoes",
+                  "reason": "Matches the smart-casual vibe."
+                }
+              ],
+              "styleAdvice": "A clean look perfect for evenings."
+            }
+          }
         }
-      }
+      ]
+    },
+    {
+      "group": "Outfits",
+      "endpoints": [
+        {
+          "name": "Save Outfit",
+          "endpoint": "/api/outfits",
+          "method": "POST",
+          "description": "Save a generated outfit to user's profile.",
+          "request": {
+            "body": {
+              "items": ["p_001", "p_005", "p_008"],
+              "name": "My Dinner Look"
+            }
+          },
+          "response": {
+            "success": true,
+            "message": "Outfit saved",
+            "data": {
+              "_id": "outfit_777",
+              "name": "My Dinner Look",
+              "createdAt": "2024-02-02T12:00:00Z"
+            }
+          }
+        },
+        {
+          "name": "Get User Outfits",
+          "endpoint": "/api/outfits",
+          "method": "GET",
+          "description": "List all saved outfits for the user.",
+          "response": {
+            "success": true,
+            "data": [
+              {
+                "_id": "outfit_777",
+                "name": "My Dinner Look",
+                "items": [
+                  { "name": "Classic White Shirt" },
+                  { "name": "Navy Chinos" }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "group": "Collections",
+      "endpoints": [
+        {
+          "name": "Get Collections",
+          "endpoint": "/api/collections",
+          "method": "GET",
+          "description": "Fetch curated collections.",
+          "response": {
+            "success": true,
+            "data": [
+              {
+                "_id": "col_summer",
+                "name": "Summer Essentials",
+                "imageUrl": "/images/summer.jpg"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "group": "Checkout",
+      "endpoints": [
+        {
+          "name": "Process Checkout",
+          "endpoint": "/api/checkout",
+          "method": "POST",
+          "description": "Handle payment and order creation.",
+          "request": {
+            "body": {
+              "items": [
+                { "productId": "p_001", "quantity": 1 }
+              ],
+              "totalAmount": 49.99
+            }
+          },
+          "response": {
+            "success": true,
+            "orderId": "ord_555",
+            "status": "confirmed"
+          }
+        }
+      ]
     }
   ]
 }

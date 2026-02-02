@@ -2,6 +2,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import TrendingSection from '@/components/TrendingSection';
 
 export default function Home() {
   return (
@@ -85,39 +86,7 @@ export default function Home() {
         </section>
 
         {/* Trending Now Section */}
-        <section className="w-full px-4 sm:px-8 lg:px-12 py-12">
-           <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Trending Now</h2>
-              <Link href="/shop" className="text-green-600 font-medium hover:text-green-700 flex items-center gap-1">
-                 View All <ArrowRight className="w-4 h-4" />
-              </Link>
-           </div>
-           
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-              {[
-                 { name: "Oversized Blazer", price: 189.00, img: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=800", cat: "Outerwear" },
-                 { name: "Eco-Knit Sweater", price: 120.00, img: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&q=80&w=800", cat: "Tops" },
-                 { name: "Tailored Trousers", price: 145.00, img: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=800", cat: "Bottoms" },
-                 { name: "Leather Boots", price: 210.00, img: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&q=80&w=800", cat: "Footwear" },
-              ].map((item, i) => (
-                 <Link href="/products/demo" key={i} className="group cursor-pointer block">
-                    <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100 mb-4">
-                       <img 
-                          src={item.img} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                       />
-                       <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-red-500">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                       </button>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 group-hover:text-green-700 transition-colors">{item.name}</h3>
-                    <p className="text-sm text-gray-500 mb-2">{item.cat}</p>
-                    <p className="text-green-600 font-semibold">${item.price.toFixed(2)}</p>
-                 </Link>
-              ))}
-           </div>
-        </section>
+        <TrendingSection />
 
         {/* Collections Section */}
         <section className="w-full px-4 sm:px-8 lg:px-12 py-12 bg-white">

@@ -1,0 +1,123 @@
+{
+  "users": [
+    {
+      "_id": "user_001",
+      "name": "Test User",
+      "email": "test@example.com",
+      "password": "hashed_password_123",
+      "preferences": {
+        "styles": ["casual", "streetwear"],
+        "sizes": { "shirt": "M", "pants": "32" }
+      }
+    }
+  ],
+  "products": [
+    {
+      "_id": "p1",
+      "brand": "ARKET",
+      "name": "Relaxed Oxford Shirt",
+      "description": "A breathable cotton Oxford shirt designed for effortless everyday wear.",
+      "price": 75.0,
+      "category": "shirt",
+      "imageUrl": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518",
+      "tags": ["casual", "work", "cotton"],
+      "stock": 100
+    },
+    {
+      "_id": "p2",
+      "brand": "COS",
+      "name": "Minimal Poplin Shirt",
+      "description": "Clean-lined poplin shirt with a contemporary relaxed fit.",
+      "price": 89.0,
+      "category": "shirt",
+      "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
+      "tags": ["minimalist", "formal"],
+      "stock": 80
+    },
+    {
+      "_id": "p5",
+      "brand": "COS",
+      "name": "Tailored Wool Trousers",
+      "description": "Sharp tailored trousers with a refined modern silhouette.",
+      "price": 145.0,
+      "category": "pants",
+      "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?&crop=faces&fit=crop",
+      "tags": ["formal", "wool"],
+      "stock": 50
+    },
+    {
+      "_id": "p6",
+      "brand": "LEVI'S",
+      "name": "501 Original Jeans",
+      "description": "Iconic straight-leg jeans with durable premium denim.",
+      "price": 98.0,
+      "category": "pants",
+      "imageUrl": "https://images.unsplash.com/photo-1506157786151-b8491531f063",
+      "tags": ["denim", "casual", "classic"],
+      "stock": 200
+    },
+    {
+      "_id": "p8",
+      "brand": "ZARA",
+      "name": "Lightweight Bomber Jacket",
+      "description": "Minimal bomber jacket ideal for transitional weather.",
+      "price": 119.0,
+      "category": "outerwear",
+      "imageUrl": "https://images.unsplash.com/photo-1514996937319-344454492b37",
+      "tags": ["casual", "layering"],
+      "stock": 45
+    },
+    {
+      "_id": "p10",
+      "brand": "Adidas",
+      "name": "Stan Smith Sneakers",
+      "description": "Classic white tennis shoes.",
+      "price": 85.0,
+      "category": "shoes",
+      "imageUrl": "/images/stan-smith.jpg",
+      "tags": ["sneakers", "white", "casual"],
+      "stock": 120
+    }
+  ],
+  "collections": [
+    {
+      "_id": "col_summer",
+      "name": "Summer Essentials",
+      "slug": "summer-essentials",
+      "description": "Everything you need for the hot weather.",
+      "imageUrl": "/images/summer-collection.jpg",
+      "featured": true,
+      "productIds": ["p1", "p4", "p6"]
+    }
+  ],
+  "recommendations": [
+    {
+      "recommendationId": "rec_demo_01",
+      "inputProductId": "p1",
+      "styleAdvice": "The Oxford shirt pairs perfectly with classic jeans for a relaxed yet put-together look. Add white sneakers to keep it fresh.",
+      "outfit": [
+        {
+          "_id": "p6",
+          "name": "501 Original Jeans",
+          "category": "pants",
+          "reason": "Classic denim complements the oxford texture."
+        },
+        {
+          "_id": "p10",
+          "name": "Stan Smith Sneakers",
+          "category": "shoes",
+          "reason": "Clean white shoes match the casual vibe."
+        }
+      ]
+    }
+  ],
+  "outfits": [
+    {
+      "_id": "outfit_user_01",
+      "userId": "user_001",
+      "name": "My Weekend Look",
+      "items": ["p1", "p6", "p10"],
+      "createdAt": "2024-02-01T10:00:00Z"
+    }
+  ]
+}

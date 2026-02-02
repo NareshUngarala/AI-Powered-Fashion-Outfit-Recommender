@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "AI Fashion Recommender",
+  title: " Style Genie",
   description: "AI-Powered Fashion Outfit Recommender System",
 };
 

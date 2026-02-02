@@ -24,26 +24,56 @@ export default function ShopPage() {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const { items, removeFromCart, cartTotal, cartCount } = useCart();
   const [products, setProducts] = useState(PRODUCTS);
-  const [isLoading, setIsLoading] = useState(false); // Changed to false initially to show mock data immediately
+  const [loading, setLoading] = useState(true);
 
-  // Attempt to fetch products from API
+  // Filter States
+  const [selectedOccasion, setSelectedOccasion] = useState<string>('');
+  const [selectedVibe, setSelectedVibe] = useState<string>('');
+  const [selectedSustainability, setSelectedSustainability] = useState<string>('');
+
+  // Fetch products from API with filters
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
-        const response = await fetch('/api/products');
+        const params = new URLSearchParams();
+        const tags = [selectedOccasion, selectedVibe, selectedSustainability].filter(Boolean).join(',');
+        
+        if (tags) params.append('tags', tags);
+        
+        const response = await fetch(`/api/products?${params.toString()}`);
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.data.length > 0) {
-            setProducts(data.data);
+          if (data.success) {
+            setProducts(data.data.length > 0 ? data.data : []); 
           }
         }
       } catch (error) {
         console.log('Using local mock data due to API error');
+        // Fallback to local filtering if API fails
+        let filtered = [...PRODUCTS];
+        const activeTags = [selectedOccasion, selectedVibe, selectedSustainability].filter(Boolean);
+        // Simple client-side mock filter if tags match any property or just random for demo
+        if (activeTags.length > 0) {
+           // This is just a fallback, logic can be simple
+        }
+        setProducts(filtered);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchProducts();
-  }, []);
+    // Debounce slightly
+    const timeoutId = setTimeout(() => {
+        fetchProducts();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedOccasion, selectedVibe, selectedSustainability]);
+
+  const toggleFilter = (setter: (val: string) => void, current: string, value: string) => {
+    setter(current === value ? '' : value);
+  };
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col bg-gray-50 font-sans text-gray-900 selection:bg-green-100 selection:text-green-900 lg:overflow-hidden">
@@ -94,15 +124,15 @@ export default function ShopPage() {
               </div>
               <div className="space-y-2">
                 {['Date Night', 'Sunday Brunch', 'Corporate Office'].map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer group">
+                  <label key={item} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleFilter(setSelectedOccasion, selectedOccasion, item)}>
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      item === 'Sunday Brunch' 
+                      selectedOccasion === item 
                         ? 'bg-green-600 border-green-600' 
                         : 'bg-white border-gray-300 group-hover:border-green-400'
                     }`}>
-                      {item === 'Sunday Brunch' && <Check className="w-3.5 h-3.5 text-white" />}
+                      {selectedOccasion === item && <Check className="w-3.5 h-3.5 text-white" />}
                     </div>
-                    <span className={`text-sm ${item === 'Sunday Brunch' ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                    <span className={`text-sm ${selectedOccasion === item ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
                       {item}
                     </span>
                   </label>
@@ -117,8 +147,9 @@ export default function ShopPage() {
                 {['Minimalist', 'Gen-Z', 'Vintage', 'Professional'].map((vibe) => (
                   <button
                     key={vibe}
+                    onClick={() => toggleFilter(setSelectedVibe, selectedVibe, vibe)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                      vibe === 'Minimalist'
+                      selectedVibe === vibe
                         ? 'bg-green-600 text-white shadow-md shadow-green-200'
                         : 'bg-white border border-gray-200 text-gray-600 hover:border-green-200 hover:text-green-700'
                     }`}
@@ -134,13 +165,13 @@ export default function ShopPage() {
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sustainability</h3>
               <div className="space-y-2">
                 {['Recycled Materials', 'Carbon Neutral'].map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer group">
+                  <label key={item} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleFilter(setSelectedSustainability, selectedSustainability, item)}>
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      item === 'Recycled Materials'
+                      selectedSustainability === item
                         ? 'bg-green-600 border-green-600' 
                         : 'bg-white border-gray-300 group-hover:border-green-400'
                     }`}>
-                      {item === 'Recycled Materials' && <Check className="w-3.5 h-3.5 text-white" />}
+                      {selectedSustainability === item && <Check className="w-3.5 h-3.5 text-white" />}
                     </div>
                     <span className="text-sm text-gray-600 flex items-center gap-2">
                       {item === 'Recycled Materials' && <span className="text-green-600 text-[10px]">♻</span>}
@@ -157,7 +188,9 @@ export default function ShopPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Recommended for Sunday Brunch</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {selectedOccasion ? `Recommended for ${selectedOccasion}` : 'All Products'}
+                </h1>
                 <p className="text-gray-500 text-sm">Based on your style profile and current weather in New York.</p>
               </div>
               <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
@@ -167,11 +200,25 @@ export default function ShopPage() {
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {PRODUCTS.map((product) => (
-                <ProductCard key={product._id} product={product} />
-              ))}
-            </div>
+            {loading ? (
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                        <div key={i} className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse" />
+                    ))}
+                 </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {products.length > 0 ? (
+                    products.map((product) => (
+                        <ProductCard key={product._id} product={product} />
+                    ))
+                ) : (
+                    <div className="col-span-full text-center py-12 text-gray-500">
+                        No products found matching your filters.
+                    </div>
+                )}
+                </div>
+            )}
           </section>
 
           {/* Right Sidebar - Cart Preview */}
@@ -198,65 +245,38 @@ export default function ShopPage() {
                         <Image src={item.image} alt={item.name} fill className="object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">{item.brand || 'BRAND'}</p>
+                        <h4 className="text-sm font-medium text-gray-900 truncate">{item.name}</h4>
+                        <p className="text-xs text-gray-500">{item.size} • {item.color}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm font-semibold text-gray-900">${item.price}</span>
                           <button 
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-gray-300 hover:text-red-500 transition-colors"
+                            onClick={() => removeFromCart(item.id, item.size, item.color)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <h4 className="text-sm font-bold text-gray-900 truncate">{item.name}</h4>
-                        <p className="text-xs text-gray-500 mb-1">
-                          Size: {item.size} • Color: {item.color}
-                          {item.quantity > 1 && ` • Qty: ${item.quantity}`}
-                        </p>
-                        <p className="text-sm font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Upsell */}
-              <div className="bg-green-50 rounded-xl p-4 border border-green-100 mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-3.5 h-3.5 text-green-600" />
-                  <h4 className="text-xs font-bold text-green-800 uppercase">Complete the Outfit</h4>
-                </div>
-                <div className="flex items-center justify-between gap-3 bg-white p-2 rounded-lg shadow-sm">
-                  <div className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                     <Image src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=200" alt="Belt" width={40} height={40} className="w-full h-full object-cover" />
+              {/* Total & Checkout */}
+              {items.length > 0 && (
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-gray-600">Total</span>
+                    <span className="text-xl font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-900">Gold Chain Belt</p>
-                    <p className="text-xs font-bold text-green-600">+ $24.00</p>
-                  </div>
-                  <button className="w-6 h-6 bg-green-100 hover:bg-green-200 rounded-full flex items-center justify-center text-green-700 transition-colors">
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+                  <Link 
+                    href="/checkout"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-xl font-semibold hover:bg-black transition-all shadow-lg shadow-gray-200"
+                  >
+                    Checkout <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
-              </div>
-
-              {/* Summary */}
-              <div className="space-y-3 pt-4 border-t border-gray-100">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-green-600 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> AI Shipping Discount
-                  </span>
-                  <span className="font-bold text-green-600">-$5.00</span>
-                </div>
-              </div>
-
-              <button className="w-full mt-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow-lg shadow-green-200 hover:shadow-green-300 transition-all flex items-center justify-center gap-2">
-                Checkout Now
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              )}
             </div>
           </aside>
         </div>

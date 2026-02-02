@@ -16,7 +16,7 @@ import {
 import { useCart } from '@/context/CartContext';
 
 export default function CartPage() {
-  const { items: cartItems, removeFromCart, cartTotal } = useCart();
+  const { items: cartItems, removeFromCart, updateQuantity, cartTotal } = useCart();
   
   const tax = cartTotal * 0.085; // 8.5% tax
   const total = cartTotal + tax;
@@ -92,11 +92,18 @@ export default function CartPage() {
                   <div className="flex items-center justify-between mt-auto">
                     {/* Quantity */}
                     <div className="flex items-center gap-2">
-                      <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <button 
+                        onClick={() => updateQuantity(item.cartId, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
+                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="font-bold text-gray-900 w-4 text-center text-sm">{item.quantity}</span>
-                      <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <button 
+                        onClick={() => updateQuantity(item.cartId, item.quantity + 1)}
+                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
+                      >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>

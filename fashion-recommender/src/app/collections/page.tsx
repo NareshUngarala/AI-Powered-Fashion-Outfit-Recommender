@@ -1,22 +1,41 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PRODUCTS } from '@/data/products';
 import { ArrowRight } from 'lucide-react';
 
-export default function CollectionsPage() {
-  // Group products by category to get unique categories and a representative image
-  const categoriesMap = PRODUCTS.reduce((acc, product) => {
-    const category = product.category || 'Uncategorized';
-    if (!acc[category]) {
-      acc[category] = product.imageUrl; // Store the first image found for this category
-    }
-    return acc;
-  }, {} as Record<string, string>);
+interface Collection {
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  featured: boolean;
+}
 
-  const categories = Object.keys(categoriesMap).sort();
+export default function CollectionsPage() {
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCollections() {
+      try {
+        const res = await fetch('/api/collections');
+        const data = await res.json();
+        if (data.success) {
+          setCollections(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch collections:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCollections();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 selection:bg-green-100 selection:text-green-900">
@@ -36,33 +55,41 @@ export default function CollectionsPage() {
         </div>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {categories.map((category) => (
-            <Link 
-              key={category} 
-              href={`/collections/${encodeURIComponent(category)}`}
-              className="block relative aspect-[3/4] rounded-xl overflow-hidden group cursor-pointer"
-            >
-              <Image
-                src={categoriesMap[category]}
-                alt={category}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-              
-              <div className="absolute bottom-0 left-0 p-4 w-full">
-                <span className="inline-block px-2 py-0.5 bg-green-500 text-white text-[8px] font-bold uppercase tracking-wider mb-2">
-                  Collection
-                </span>
-                <div className="flex items-end justify-between">
-                  <h3 className="text-lg font-serif text-white leading-tight">{category}</h3>
-                  <ArrowRight className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-5px] group-hover:translate-x-0 duration-300" />
+        {loading ? (
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="aspect-[3/4] bg-gray-100 rounded-xl animate-pulse" />
+              ))}
+           </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {collections.map((collection) => (
+              <Link 
+                key={collection._id} 
+                href={`/collections/${collection.slug}`}
+                className="block relative aspect-[3/4] rounded-xl overflow-hidden group cursor-pointer"
+              >
+                <Image
+                  src={collection.image || 'https://via.placeholder.com/400x600?text=No+Image'}
+                  alt={collection.name}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+                
+                <div className="absolute bottom-0 left-0 p-4 w-full">
+                  <span className="inline-block px-2 py-0.5 bg-green-500 text-white text-[8px] font-bold uppercase tracking-wider mb-2">
+                    Collection
+                  </span>
+                  <div className="flex items-end justify-between">
+                    <h3 className="text-lg font-serif text-white leading-tight">{collection.name}</h3>
+                    <ArrowRight className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-5px] group-hover:translate-x-0 duration-300" />
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

@@ -150,11 +150,18 @@ export default function SignIn() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-[#0EA5E9] hover:bg-[#0284c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0EA5E9] transition-all disabled:opacity-50"
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign In ->'}
             </button>
           </form>
+
+          <div className="mt-8 text-center text-sm text-gray-500">
+            Don't have an account?{' '}
+            <Link href="/auth/signup" className="font-semibold text-green-600 hover:text-green-500">
+              Sign up
+            </Link>
+          </div>
 
           <div className="mt-8">
             <div className="relative">
