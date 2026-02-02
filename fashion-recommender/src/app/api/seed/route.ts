@@ -26,6 +26,7 @@ export async function GET() {
 
     // Seed products
     // Remove _id from PRODUCTS to let MongoDB generate its own ObjectIds
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const productsToInsert = PRODUCTS.map(({ _id, ...rest }) => ({
       ...rest,
       stock: 50, // Default stock
@@ -59,10 +60,10 @@ export async function GET() {
     await Collection.insertMany(collectionsToInsert);
 
     return NextResponse.json({ success: true, message: 'Database seeded successfully' }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error seeding database:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to seed database', error: error.message },
+      { success: false, message: 'Failed to seed database', error: (error as Error).message },
       { status: 500 }
     );
   }

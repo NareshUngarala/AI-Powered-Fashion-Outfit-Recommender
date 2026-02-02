@@ -3,22 +3,21 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/mongodb';
 import Wishlist from '@/models/Wishlist';
-import Product from '@/models/Product'; // Ensure Product model is registered
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
     
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     
-    let wishlist = await Wishlist.findOne({ userId }).populate('products');
+    const wishlist = await Wishlist.findOne({ userId }).populate('products');
 
     if (!wishlist) {
       return NextResponse.json({ success: true, data: [] });
@@ -34,7 +33,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -45,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     let wishlist = await Wishlist.findOne({ userId });

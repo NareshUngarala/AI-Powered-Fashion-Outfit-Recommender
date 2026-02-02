@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get('featured');
     const limit = searchParams.get('limit');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = {};
 
     if (category) {
@@ -49,10 +50,10 @@ export async function GET(request: NextRequest) {
     const products = await productQuery;
 
     return NextResponse.json({ success: true, data: products }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch products', error: error.message },
+      { success: false, message: 'Failed to fetch products', error: (error as Error).message },
       { status: 500 }
     );
   }

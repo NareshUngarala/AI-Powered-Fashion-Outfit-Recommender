@@ -7,15 +7,16 @@ import Cart from '@/models/Cart';
 // Helper to get user ID from session
 async function getUserId() {
   const session = await getServerSession(authOptions);
-  // @ts-ignore
+  // @ts-expect-error: Session user type gap
   if (!session || !session.user || !session.user.id) {
     return null;
   }
-  // @ts-ignore
+  // @ts-expect-error: Session user type gap
   return session.user.id;
 }
 
-export async function GET(req: Request) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_req: Request) {
   const userId = await getUserId();
   if (!userId) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
       cart = new Cart({ userId, items: [] });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const itemIndex = cart.items.findIndex((item: any) => 
       item.productId.toString() === productId && 
       item.size === size && 
@@ -87,6 +89,7 @@ export async function PUT(req: Request) {
     const cart = await Cart.findOne({ userId });
     if (!cart) return NextResponse.json({ success: false, message: 'Cart not found' }, { status: 404 });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const itemIndex = cart.items.findIndex((item: any) => 
       item.productId.toString() === productId && 
       item.size === size && 
@@ -127,6 +130,7 @@ export async function DELETE(req: Request) {
     if (!cart) return NextResponse.json({ success: false, message: 'Cart not found' }, { status: 404 });
 
     const initialLength = cart.items.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cart.items = cart.items.filter((item: any) => 
       !(item.productId.toString() === productId && 
         (item.size || '') === (size || '') && 

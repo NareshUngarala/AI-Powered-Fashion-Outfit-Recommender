@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { 
-  ShoppingBag, 
   Sparkles, 
   Leaf, 
   Truck, 
@@ -13,6 +12,7 @@ import {
   Check
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { Product } from '@/data/products';
 
@@ -100,11 +100,11 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         <nav className="text-xs font-medium text-gray-400">
           <ol className="list-none p-0 inline-flex items-center gap-2">
             <li>
-              <a href="/" className="hover:text-green-600 transition-colors">Home</a>
+              <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
             </li>
             <span className="text-gray-300">›</span>
             <li>
-              <a href="/shop" className="hover:text-green-600 transition-colors">Shop</a>
+              <Link href="/shop" className="hover:text-green-600 transition-colors">Shop</Link>
             </li>
             <span className="text-gray-300">›</span>
             <li className="text-gray-900 font-semibold">{product.category || 'Product'}</li>
@@ -250,9 +250,9 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {recommendations.map((item, index) => (
               <div key={index} className="bg-white rounded-xl p-2.5 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden relative mb-3">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <button className="absolute bottom-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-green-600 hover:text-white transition-colors">
+                <div className="relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-3">
+                  <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <button className="absolute bottom-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-green-600 hover:text-white transition-colors z-10">
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>

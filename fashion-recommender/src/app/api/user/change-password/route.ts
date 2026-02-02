@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -20,7 +20,7 @@ export async function PUT(req: Request) {
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     const user = await User.findById(userId);

@@ -29,7 +29,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -40,12 +40,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Fetch cart from API
-  const fetchCart = async () => {
+  const fetchCart = React.useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await fetch('/api/cart');
       const data = await res.json();
       if (data.success && data.data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const serverItems = data.data.items.map((item: any) => ({
           id: item.productId,
           cartId: getCartId({ id: item.productId, size: item.size, color: item.color }),
@@ -64,7 +65,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Empty dependency array as it relies on stable setters and getCartId (which is pure-ish)
 
   // Initial Load
   useEffect(() => {
@@ -84,7 +85,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setIsInitialized(true);
-  }, [status]);
+  }, [status, fetchCart]);
 
   // Sync to LocalStorage (only for guests)
   useEffect(() => {
@@ -98,7 +99,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     
     // Optimistic update
     const existingItemIndex = items.findIndex((item) => item.cartId === cartId);
-    let newItems = [...items];
+    const newItems = [...items];
     
     if (existingItemIndex > -1) {
       newItems[existingItemIndex].quantity += 1;

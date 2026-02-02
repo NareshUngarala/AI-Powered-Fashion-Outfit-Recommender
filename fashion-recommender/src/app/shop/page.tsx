@@ -5,14 +5,11 @@ import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { 
   SlidersHorizontal, 
-  Search, 
   ShoppingBag, 
   Trash2, 
-  Plus, 
   ArrowRight,
   Check,
-  ChevronDown,
-  Sparkles
+  ChevronDown
 } from 'lucide-react';
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
@@ -49,9 +46,9 @@ export default function ShopPage() {
           }
         }
       } catch (error) {
-        console.log('Using local mock data due to API error');
+        console.log('Using local mock data due to API error', error);
         // Fallback to local filtering if API fails
-        let filtered = [...PRODUCTS];
+        const filtered = [...PRODUCTS];
         const activeTags = [selectedOccasion, selectedVibe, selectedSustainability].filter(Boolean);
         // Simple client-side mock filter if tags match any property or just random for demo
         if (activeTags.length > 0) {
@@ -250,7 +247,7 @@ export default function ShopPage() {
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-sm font-semibold text-gray-900">${item.price}</span>
                           <button 
-                            onClick={() => removeFromCart(item.id, item.size, item.color)}
+                            onClick={() => removeFromCart(item.cartId)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />

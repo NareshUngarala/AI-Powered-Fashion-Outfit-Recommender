@@ -149,6 +149,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {

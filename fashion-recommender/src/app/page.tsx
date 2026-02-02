@@ -1,6 +1,7 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import TrendingSection from '@/components/TrendingSection';
 
@@ -15,10 +16,11 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* Left Image */}
             <div className="relative aspect-[3/4] lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-gray-100 order-2 lg:order-1">
-              <img 
+              <Image 
                 src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop" 
                 alt="Fashionable model in neutral tones" 
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
             </div>
@@ -101,10 +103,11 @@ export default function Home() {
                  { title: "Date Night AI Picks", img: "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?auto=format&fit=crop&q=80&w=800" },
               ].map((collection, i) => (
                  <div key={i} className="group relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl cursor-pointer">
-                    <img 
+                    <Image 
                        src={collection.img} 
                        alt={collection.title} 
-                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                       fill
+                       className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8 w-full">

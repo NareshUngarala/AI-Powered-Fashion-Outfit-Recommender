@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (token && session.user) {
-        // @ts-ignore
+        // @ts-expect-error: session.user type is extended dynamically
         session.user.id = token.id as string;
       }
       return session;

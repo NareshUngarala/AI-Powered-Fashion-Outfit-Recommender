@@ -6,19 +6,19 @@ import Wishlist from '@/models/Wishlist';
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
-    const { productId } = params;
+    const { productId } = await params;
 
     await Wishlist.findOneAndUpdate(
       { userId },

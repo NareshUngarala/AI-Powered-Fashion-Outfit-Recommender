@@ -6,19 +6,19 @@ import Order from '@/models/Order';
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
     
-    const { id } = params;
-    // @ts-ignore
+    const { id } = await params;
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     // Find order by ID (can be _id or orderId) and ensure it belongs to the user

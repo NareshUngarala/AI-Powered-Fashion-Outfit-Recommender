@@ -7,13 +7,13 @@ import PaymentMethod from '@/models/PaymentMethod';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     const methods = await PaymentMethod.find({ userId }).sort({ createdAt: -1 });
@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     const last4 = cardNumber.slice(-4);
 
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -77,7 +77,7 @@ export async function DELETE(req: Request) {
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     // Ensure user owns the payment method

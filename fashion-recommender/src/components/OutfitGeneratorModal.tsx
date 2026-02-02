@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Sparkles, ShoppingBag, Plus } from 'lucide-react';
-import { clsx } from 'clsx';
+import Image from 'next/image';
 import { twMerge } from 'tailwind-merge';
 
 interface OutfitItem {
@@ -121,12 +121,13 @@ export default function OutfitGeneratorModal({ isOpen, onClose }: OutfitGenerato
             {/* Left Column: Generated Image */}
             <div className="hidden lg:block w-[40%] bg-gray-50 p-4">
               <div className="relative w-full h-full rounded-xl overflow-hidden shadow-sm">
-                <img 
+                <Image 
                   src={generatedLookImage} 
                   alt="AI Generated Look" 
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
-                <div className="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg flex items-center justify-between text-[10px] border border-white/50 shadow-sm">
+                <div className="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg flex items-center justify-between text-[10px] border border-white/50 shadow-sm z-10">
                   <span className="font-medium text-gray-600">AI-Generated</span>
                   <span className="text-gray-400">#FA-2940</span>
                 </div>
@@ -140,8 +141,8 @@ export default function OutfitGeneratorModal({ isOpen, onClose }: OutfitGenerato
               <div className="space-y-2 flex-1 overflow-y-auto pr-1">
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 p-2 border border-gray-100 rounded-xl hover:border-green-100 hover:shadow-sm transition-all group bg-white">
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image src={item.image} alt={item.name} fill className="object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-gray-900 text-xs truncate">{item.name}</h4>

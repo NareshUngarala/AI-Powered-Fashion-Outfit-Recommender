@@ -8,7 +8,6 @@ import {
   Trash2, 
   Plus, 
   Minus, 
-  Sparkles, 
   Lock, 
   CreditCard
 } from 'lucide-react';
@@ -31,7 +30,7 @@ export default function CartPage() {
                <ArrowLeft className="w-8 h-8 text-gray-400" />
              </div>
              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-             <p className="text-gray-500 mb-8">Looks like you haven't added any items yet.</p>
+             <p className="text-gray-500 mb-8">Looks like you haven&apos;t added any items yet.</p>
              <Link href="/shop" className="inline-block px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-200">
                Start Shopping
              </Link>

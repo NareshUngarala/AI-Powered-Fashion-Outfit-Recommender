@@ -49,7 +49,7 @@ export default function CollectionsPage() {
               The Collections
             </h1>
             <p className="text-gray-500 italic text-lg max-w-xl">
-              AI-curated edits defining the season's mood. Explore the future of fashion.
+              AI-curated edits defining the season&apos;s mood. Explore the future of fashion.
             </p>
           </div>
         </div>

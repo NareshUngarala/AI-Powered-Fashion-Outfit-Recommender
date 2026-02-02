@@ -33,16 +33,17 @@ export async function POST(req: Request) {
       image: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user.toObject();
 
     return NextResponse.json(
       { success: true, message: 'User created successfully', data: userWithoutPassword },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating user:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to create user', error: error.message },
+      { success: false, message: 'Failed to create user', error: (error as Error).message },
       { status: 500 }
     );
   }

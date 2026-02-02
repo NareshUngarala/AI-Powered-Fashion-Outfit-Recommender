@@ -8,6 +8,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
+    
     if (!session || !session.user) {
       return NextResponse.json(
         { message: 'Unauthorized' },
@@ -17,6 +18,7 @@ export async function GET() {
 
     await connectToDatabase();
 
+    // @ts-expect-error: Session user type gap
     const user = await User.findById(session.user.id).select('-password');
 
     if (!user) {
@@ -55,6 +57,7 @@ export async function PUT(req: Request) {
     await connectToDatabase();
 
     const updatedUser = await User.findByIdAndUpdate(
+      // @ts-expect-error: Session user type gap
       session.user.id,
       { name, image },
       { new: true, runValidators: true }

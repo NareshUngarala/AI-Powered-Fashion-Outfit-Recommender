@@ -4,16 +4,17 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
 
-export async function DELETE(req: Request) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function DELETE(_req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     await User.findByIdAndDelete(userId);

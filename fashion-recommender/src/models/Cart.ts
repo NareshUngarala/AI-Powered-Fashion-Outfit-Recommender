@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 
 const CartItemSchema = new Schema({
   productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -13,13 +13,7 @@ const CartItemSchema = new Schema({
 const CartSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   items: [CartItemSchema],
-  updatedAt: { type: Date, default: Date.now }
-});
-
-CartSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
+}, { timestamps: true });
 
 const Cart = models.Cart || model('Cart', CartSchema);
 

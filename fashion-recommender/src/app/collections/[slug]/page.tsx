@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -52,7 +52,7 @@ export default function CollectionDetailsPage() {
         ) : (
           <div className="py-20 text-center space-y-4">
             <p className="text-xl text-gray-500">
-              We couldn't find any products in this category.
+              We couldn&apos;t find any products in this category.
             </p>
             <Link 
               href="/collections" 

@@ -8,7 +8,7 @@ import Cart from '@/models/Cart';
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     
     const body = await req.json();
     const { items, total, shippingAddress } = body;
-    // @ts-ignore
+    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     if (!items || items.length === 0) {
@@ -49,10 +49,10 @@ export async function POST(req: Request) {
       data: newOrder
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Checkout error:', error);
     return NextResponse.json(
-      { success: false, message: 'Checkout failed', error: error.message },
+      { success: false, message: 'Checkout failed', error: (error as Error).message },
       { status: 500 }
     );
   }

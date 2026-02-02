@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ChevronLeft, Package, MapPin, CreditCard, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, Package, MapPin, CreditCard, Calendar } from 'lucide-react';
 
 interface OrderItem {
   productId: string;
@@ -36,7 +36,7 @@ interface Order {
 }
 
 export default function OrderDetailsPage({ params }: { params: { id: string } }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Product } from '@/data/products';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -14,10 +15,10 @@ export interface OutfitRecommendation {
   styleAdvice: string;
 }
 
-export async function getOutfitRecommendation(product: any): Promise<OutfitRecommendation> {
+export async function getOutfitRecommendation(product: Product): Promise<OutfitRecommendation> {
   if (!GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY is not set. Returning mock data.");
-    return getMockRecommendation(product);
+    return getMockRecommendation();
   }
 
   try {
@@ -49,11 +50,11 @@ export async function getOutfitRecommendation(product: any): Promise<OutfitRecom
     return JSON.parse(cleanText) as OutfitRecommendation;
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    return getMockRecommendation(product);
+    return getMockRecommendation();
   }
 }
 
-function getMockRecommendation(product: any): OutfitRecommendation {
+function getMockRecommendation(): OutfitRecommendation {
   return {
     items: [
       {
