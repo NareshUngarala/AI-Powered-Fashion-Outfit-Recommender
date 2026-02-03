@@ -52,14 +52,14 @@ export async function PUT(req: Request) {
       );
     }
 
-    const { name, image } = await req.json();
+    const { name, image, gender, preferredStyle } = await req.json();
 
     await connectToDatabase();
 
     const updatedUser = await User.findByIdAndUpdate(
       // @ts-expect-error: Session user type gap
       session.user.id,
-      { name, image },
+      { name, image, gender, preferredStyle },
       { new: true, runValidators: true }
     ).select('-password');
 

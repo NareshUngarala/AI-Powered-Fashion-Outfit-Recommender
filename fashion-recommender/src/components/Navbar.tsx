@@ -86,9 +86,11 @@ export default function Navbar() {
                   <button className="flex items-center space-x-1 text-sm text-gray-700 hover:text-black">
                      <UserIcon className="h-5 w-5" />
                   </button>
-                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block">
-                      <div className="px-4 py-2 text-xs text-gray-500">Signed in as {session.user?.name}</div>
-                      <button onClick={() => signOut()} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+                   <div className="absolute right-0 pt-2 w-48 hidden group-hover:block">
+                      <div className="bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
+                        <div className="px-4 py-2 text-xs text-gray-500">Signed in as {session.user?.name}</div>
+                        <button onClick={() => signOut()} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+                      </div>
                    </div>
                 </div>
               ) : (

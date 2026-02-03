@@ -15,6 +15,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { Product } from '@/data/products';
+import { OutfitRecommendation } from '@/lib/ai-stylist';
 
 // Extend Product interface if needed for frontend specific props not in data file
 interface ProductDetail extends Product {
@@ -27,7 +28,44 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState('Ivory');
   const [isOutfitModalOpen, setIsOutfitModalOpen] = useState(false);
+  const [outfitData, setOutfitData] = useState<OutfitRecommendation | null>(null);
+  const [isLoadingOutfit, setIsLoadingOutfit] = useState(false);
   const { addToCart } = useCart();
+
+  const handleOpenOutfitModal = async () => {
+    setIsOutfitModalOpen(true);
+    setIsLoadingOutfit(true);
+    try {
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product })
+      });
+      const data = await response.json();
+      setOutfitData(data);
+    } catch (error) {
+      console.error('Failed to fetch recommendation:', error);
+    } finally {
+      setIsLoadingOutfit(false);
+    }
+  };
+
+  const handleRegenerate = async (occasion: string, gender: string) => {
+    setIsLoadingOutfit(true);
+    try {
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, occasion, gender })
+      });
+      const data = await response.json();
+      setOutfitData(data);
+    } catch (error) {
+      console.error('Failed to regenerate recommendation:', error);
+    } finally {
+      setIsLoadingOutfit(false);
+    }
+  };
 
   // Static options (since these aren't in the DB yet)
   const colors = [
@@ -45,13 +83,15 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
     { icon: ShieldCheck, text: "Quality Guaranteed" }
   ];
 
-  // Mock gallery images using the main image
-  const images = [
-    product.imageUrl,
-    product.imageUrl, // Duplicating for gallery effect
-    product.imageUrl,
-    product.imageUrl
-  ];
+  // Use product images if available, otherwise fallback to mock duplicates
+  const images = (product.images && product.images.length > 0) 
+    ? product.images 
+    : [
+        product.imageUrl,
+        product.imageUrl, // Duplicating for gallery effect
+        product.imageUrl,
+        product.imageUrl
+      ];
 
   const handleAddToCart = () => {
     addToCart({
@@ -147,7 +187,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 font-serif">{product.name}</h1>
               <div className="mt-2 flex items-center gap-4">
-                <p className="text-xl font-semibold text-gray-900">${product.price.toFixed(2)}</p>
+                <p className="text-xl font-semibold text-gray-900">₹{product.price.toFixed(2)}</p>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800 uppercase tracking-wide">
                   In Stock
                 </span>
@@ -203,7 +243,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
             {/* Actions */}
             <div className="space-y-2 pt-2">
               <button 
-                onClick={() => setIsOutfitModalOpen(true)}
+                onClick={handleOpenOutfitModal}
                 className="w-full h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-lg font-bold text-base shadow-md shadow-green-100 transition-all flex items-center justify-center gap-2 group"
               >
                 <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
@@ -260,7 +300,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
                   <h3 className="font-bold text-gray-900 text-xs leading-tight mb-0.5">{item.name}</h3>
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="text-gray-500">{item.color}</span>
-                    <span className="font-medium text-green-600">${item.price.toFixed(2)}</span>
+                    <span className="font-medium text-green-600">₹{item.price.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -271,7 +311,11 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
       </div>
       <OutfitGeneratorModal 
         isOpen={isOutfitModalOpen} 
-        onClose={() => setIsOutfitModalOpen(false)} 
+        onClose={() => setIsOutfitModalOpen(false)}
+        product={product}
+        recommendation={outfitData}
+        isLoading={isLoadingOutfit}
+        onRegenerate={handleRegenerate}
       />
     </div>
   );

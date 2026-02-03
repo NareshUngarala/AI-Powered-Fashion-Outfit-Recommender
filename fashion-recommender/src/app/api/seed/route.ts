@@ -29,37 +29,51 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const productsToInsert = PRODUCTS.map(({ _id, ...rest }) => ({
       ...rest,
-      stock: 50, // Default stock
-      tags: [rest.category.toLowerCase(), "fashion", rest.brand.toLowerCase()] // Generate some tags
+      // Ensure arrays and required fields have defaults if missing (though our new data has them)
+      images: rest.images || [rest.imageUrl],
+      tags: rest.tags || [rest.category.toLowerCase(), rest.style.toLowerCase(), rest.brand.toLowerCase()],
+      stock: rest.stock || 50,
+      match: rest.match || 90 // Default match score if not provided
     }));
 
     await Product.insertMany(productsToInsert);
 
-    // Seed Collections
-    const uniqueCategories = Array.from(new Set(PRODUCTS.map(p => p.category)));
-    
-    const collectionsToInsert = uniqueCategories.map(category => {
-      // Find a representative product for the image
-      const representativeProduct = PRODUCTS.find(p => p.category === category);
-      let imageUrl = representativeProduct?.imageUrl || 'https://placehold.co/600x400?text=Collection';
-      
-      // Override for Accessories
-      if (category === 'Accessories') {
-        imageUrl = 'https://plus.unsplash.com/premium_photo-1673285096761-79e49ff5b760?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
-      }
-
-      return {
-        name: category,
-        slug: category, // Using category name as slug for compatibility
-        description: `Explore our ${category} collection`,
-        imageUrl: imageUrl,
+    // Seed Style Collections
+    // We want specifically: Casual Wear, Party Wear, Formal Wear, Traditional Wear
+    const styleCollections = [
+      {
+        name: 'Traditional Wear',
+        slug: 'Traditional Wear',
+        description: 'Festivals & Weddings',
+        imageUrl: 'https://img.freepik.com/free-photo/two-indian-stylish-mans-friends-traditional-clothes-posed-outdoor_627829-2531.jpg?semt=ais_hybrid&w=740&q=80', // Sherwani image
         featured: true
-      };
-    });
+      },
+      {
+        name: 'Casual Wear',
+        slug: 'Casual Wear',
+        description: 'Daily Life & Comfort',
+        imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab', // Casual Shirt
+        featured: true
+      },
+      {
+        name: 'Formal Wear',
+        slug: 'Formal Wear',
+        description: 'Office & Business',
+        imageUrl: 'https://images.unsplash.com/photo-1490578474895-699cd4e2cf59', // Suit
+        featured: true
+      },
+      {
+        name: 'Party Wear',
+        slug: 'Party Wear',
+        description: 'Trendy & Fusion Styles',
+        imageUrl: 'https://images.unsplash.com/photo-1514996937319-344454492b37', // Bomber Jacket/Party vibe
+        featured: true
+      }
+    ];
 
-    await Collection.insertMany(collectionsToInsert);
+    await Collection.insertMany(styleCollections);
 
-    return NextResponse.json({ success: true, message: 'Database seeded successfully' }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Database seeded successfully with Styles' }, { status: 200 });
   } catch (error: unknown) {
     console.error('Error seeding database:', error);
     return NextResponse.json(

@@ -4,8 +4,32 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import TrendingSection from '@/components/TrendingSection';
+import connectToDatabase from '@/lib/mongodb';
+import Collection from '@/models/Collection';
 
-export default function Home() {
+interface ICollection {
+  _id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  description?: string;
+  featured?: boolean;
+}
+
+async function getCollections() {
+  try {
+    await connectToDatabase();
+    const collections = await Collection.find({ featured: true }).limit(4).lean();
+    return JSON.parse(JSON.stringify(collections));
+  } catch (error) {
+    console.error('Failed to fetch collections', error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const collections = await getCollections();
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-green-100 selection:text-green-900">
       <Navbar />
@@ -45,8 +69,8 @@ export default function Home() {
                 <Link href="/stylist" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-white bg-green-600 rounded-full hover:bg-green-700 transition-all shadow-lg shadow-green-200 hover:shadow-green-300">
                   Get My AI Look
                 </Link>
-                <Link href="/shop" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all">
-                  Explore Trends
+                <Link href="/collections" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all">
+                  Explore Styles
                 </Link>
               </div>
 
@@ -90,34 +114,39 @@ export default function Home() {
         {/* Trending Now Section */}
         <TrendingSection />
 
-        {/* Collections Section */}
+        {/* Shop by Style Section */}
         <section className="w-full px-4 sm:px-8 lg:px-12 py-12 bg-white">
            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Curated Collections</h2>
+              <h2 className="text-3xl font-bold text-gray-900">Shop by Style</h2>
+              <Link href="/collections" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1">
+                View all <ArrowRight className="w-4 h-4" />
+              </Link>
            </div>
            
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                 { title: "Sustainable Chic", img: "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?auto=format&fit=crop&q=80&w=800" },
-                 { title: "Work From Anywhere", img: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&q=80&w=800" },
-                 { title: "Date Night AI Picks", img: "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?auto=format&fit=crop&q=80&w=800" },
-              ].map((collection, i) => (
-                 <div key={i} className="group relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl cursor-pointer">
-                    <Image 
-                       src={collection.img} 
-                       alt={collection.title} 
-                       fill
-                       className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-8 w-full">
-                       <h3 className="text-2xl font-bold text-white mb-4">{collection.title}</h3>
-                       <span className="inline-flex items-center text-sm font-semibold text-white group-hover:text-green-300 transition-colors">
-                          Shop Collection <ArrowRight className="ml-2 w-4 h-4" />
-                       </span>
-                    </div>
-                 </div>
-              ))}
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {collections.length > 0 ? (
+                collections.map((collection: ICollection) => (
+                   <Link key={collection._id} href={`/collections/${collection.slug}`} className="group relative aspect-[3/4] overflow-hidden rounded-2xl cursor-pointer">
+                      <Image 
+                         src={collection.imageUrl || 'https://via.placeholder.com/600x800'} 
+                         alt={collection.name} 
+                         fill
+                         className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-6 w-full">
+                         <h3 className="text-xl font-bold text-white mb-2">{collection.name}</h3>
+                         <span className="inline-flex items-center text-sm font-semibold text-white/90 group-hover:text-white transition-colors">
+                            Explore <ArrowRight className="ml-2 w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                         </span>
+                      </div>
+                   </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10 text-gray-500">
+                  <p>No styles found. <Link href="/api/seed" className="underline text-blue-600">Seed the database</Link></p>
+                </div>
+              )}
            </div>
         </section>
 

@@ -77,7 +77,7 @@ export default function CartPage() {
                     <Link href={`/products/${item.id}`} className="hover:text-green-600 transition-colors">
                       <h3 className="text-base font-bold text-gray-900">{item.name}</h3>
                     </Link>
-                    <p className="text-base font-bold text-gray-900">${item.price.toFixed(2)}</p>
+                    <p className="text-base font-bold text-gray-900">₹{item.price.toFixed(2)}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
@@ -130,7 +130,7 @@ export default function CartPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Subtotal</span>
-                  <span className="font-medium text-gray-900">${cartTotal.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">₹{cartTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Estimated Shipping</span>
@@ -138,12 +138,12 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Estimated Tax</span>
-                  <span className="font-medium text-gray-900">${tax.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">₹{tax.toFixed(2)}</span>
                 </div>
                 <div className="h-px bg-gray-100 my-3" />
                 <div className="flex justify-between items-end">
                   <span className="text-lg font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-green-500">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-green-500">₹{total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -191,7 +191,7 @@ export default function CartPage() {
                    <h3 className="text-xs font-bold text-green-800">AI Stylist Tip</h3>
                    <p className="text-xs text-green-700 leading-relaxed">
                      Adding our <span className="font-bold">Satin Scarf</span> would complete this outfit perfectly. 
-                     <button className="ml-1 underline font-bold hover:text-green-900">Add for $45</button>
+                     <button className="ml-1 underline font-bold hover:text-green-900">Add for ₹45</button>
                    </p>
                  </div>
                </div>

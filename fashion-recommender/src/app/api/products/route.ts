@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
     const query: any = {};
 
     if (category) {
-      query.category = { $regex: new RegExp(category, 'i') };
+      if (category.toLowerCase() === 'indian wear') {
+        query.style = 'Traditional Wear';
+      } else {
+        query.category = { $regex: new RegExp(category, 'i') };
+      }
     }
 
     if (tags) {

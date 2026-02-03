@@ -31,7 +31,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-green-600 transition-colors truncate">
           {product.name}
         </h3>
-        <p className="text-sm font-bold text-green-600">${product.price.toFixed(2)}</p>
+        <p className="text-sm font-bold text-green-600">₹{product.price.toFixed(2)}</p>
       </div>
     </Link>
   );

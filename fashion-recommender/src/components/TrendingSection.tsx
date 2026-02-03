@@ -90,7 +90,7 @@ export default function TrendingSection() {
                   {product.name}
                 </h3>
               </div>
-              <p className="text-lg font-semibold text-gray-900">${product.price.toFixed(2)}</p>
+              <p className="text-lg font-semibold text-gray-900">₹{product.price.toFixed(2)}</p>
             </div>
           </Link>
         ))}

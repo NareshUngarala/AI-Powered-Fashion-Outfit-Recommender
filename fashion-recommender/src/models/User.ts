@@ -17,6 +17,15 @@ const UserSchema = new Schema({
   image: {
     type: String,
   },
+  gender: {
+    type: String,
+    enum: ['Men', 'Women', 'Unisex'],
+    default: 'Unisex',
+  },
+  preferredStyle: {
+    type: String,
+    default: 'Casual',
+  },
   createdAt: {
     type: Date,
     default: Date.now,

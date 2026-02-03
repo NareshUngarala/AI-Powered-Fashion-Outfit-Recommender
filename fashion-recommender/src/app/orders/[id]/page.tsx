@@ -165,7 +165,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">${item.price.toFixed(2)}</p>
+                      <p className="font-semibold text-gray-900">₹{item.price.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
@@ -173,7 +173,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
               <div className="p-4 bg-gray-50 border-t border-gray-100">
                 <div className="flex justify-between items-center text-sm mb-2">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium text-gray-900">${order.total.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">₹{order.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm mb-2">
                   <span className="text-gray-600">Shipping</span>
@@ -181,7 +181,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                 </div>
                 <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-gray-200 mt-2">
                   <span className="text-gray-900">Total</span>
-                  <span className="text-gray-900">${order.total.toFixed(2)}</span>
+                  <span className="text-gray-900">₹{order.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

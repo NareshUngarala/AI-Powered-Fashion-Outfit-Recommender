@@ -45,6 +45,8 @@ interface UserProfile {
   name: string;
   email: string;
   image?: string;
+  gender?: string;
+  preferredStyle?: string;
   createdAt: string;
   _id: string;
 }
@@ -66,17 +68,40 @@ interface PaymentMethod {
   cardHolderName: string;
 }
 
+interface OutfitItem {
+  _id: string;
+  name: string;
+  price?: number;
+  category: string;
+  image?: string;
+  reason: string;
+}
+
+interface Outfit {
+  _id: string;
+  name: string;
+  createdAt: string;
+  items: OutfitItem[];
+  styleAdvice: string;
+}
+
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [payments, setPayments] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('orders'); // orders, info, wishlist, payments, settings
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', image: '' });
+  const [editForm, setEditForm] = useState({ 
+    name: '', 
+    image: '',
+    gender: 'Unisex',
+    preferredStyle: ''
+  });
   
   // New States for Forms
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -111,7 +136,9 @@ export default function ProfilePage() {
           setProfile(profileData.data);
           setEditForm({ 
             name: profileData.data.name, 
-            image: profileData.data.image || '' 
+            image: profileData.data.image || '',
+            gender: profileData.data.gender || 'Unisex',
+            preferredStyle: profileData.data.preferredStyle || ''
           });
         }
 
@@ -129,6 +156,14 @@ export default function ProfilePage() {
         
         if (wishlistData.success) {
           setWishlist(wishlistData.data);
+        }
+
+        // Fetch Outfits
+        const outfitsRes = await fetch('/api/outfits');
+        const outfitsData = await outfitsRes.json();
+        
+        if (outfitsData.success) {
+          setOutfits(outfitsData.data);
         }
 
         // Fetch Payments
@@ -285,7 +320,7 @@ export default function ProfilePage() {
   };
 
   const styleStats = {
-    vibe: "Urban Minimalist",
+    vibe: profile?.preferredStyle || "Urban Minimalist",
     matchRate: "94%",
     scans: 12
   };
@@ -368,6 +403,13 @@ export default function ProfilePage() {
                     >
                        <Package className="w-5 h-5" />
                        My Orders
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('outfits')}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'outfits' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                       <Sparkles className="w-5 h-5" />
+                       My Outfits
                     </button>
                     <button 
                       onClick={() => setActiveTab('info')}
@@ -461,7 +503,7 @@ export default function ProfilePage() {
                                    }`}>
                                       {order.status}
                                    </span>
-                                   <span className="font-bold text-gray-900">${order.total.toFixed(2)}</span>
+                                   <span className="font-bold text-gray-900">₹{order.total.toFixed(2)}</span>
                                 </div>
                              </div>
     
@@ -500,6 +542,67 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {/* OUTFITS TAB */}
+              {activeTab === 'outfits' && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                   <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                      <h2 className="text-lg font-bold text-gray-900">My Saved Outfits</h2>
+                      <span className="text-sm text-gray-500">{outfits.length} outfits</span>
+                   </div>
+                   
+                   <div className="p-6">
+                      {outfits.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">
+                          <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p>No outfits saved yet. Use the AI Stylist to create some!</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-6">
+                          {outfits.map((outfit) => (
+                            <div key={outfit._id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                               <div className="flex justify-between items-start mb-4">
+                                  <div>
+                                    <h3 className="font-bold text-lg text-gray-900">{outfit.name || 'Untitled Outfit'}</h3>
+                                    <p className="text-sm text-gray-500">{formatDate(outfit.createdAt)}</p>
+                                  </div>
+                               </div>
+                               
+                               <div className="mb-4 bg-green-50 p-4 rounded-lg">
+                                  <p className="text-sm text-green-800 italic">&quot;{outfit.styleAdvice}&quot;</p>
+                               </div>
+
+                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  {outfit.items.map((item, idx) => (
+                                    <div key={idx} className="group relative">
+                                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                                          <Image 
+                                            src={item.image || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300"} 
+                                            alt={item.name} 
+                                            fill 
+                                            className="object-cover group-hover:scale-105 transition-transform"
+                                          />
+                                       </div>
+                                       <div className="mt-2">
+                                          <p className="font-medium text-sm text-gray-900 truncate">{item.name}</p>
+                                          <p className="text-xs text-gray-500">{item.category}</p>
+                                          <div className="flex justify-between items-center mt-1">
+                                             <span className="text-xs font-bold">₹{item.price}</span>
+                                             <Link href={`/products/${item._id}`} className="text-xs text-green-600 hover:underline">
+                                               View
+                                             </Link>
+                                          </div>
+                                       </div>
+                                    </div>
+                                  ))}
+                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                   </div>
+                </div>
+              )}
+
               {/* PERSONAL INFO TAB */}
               {activeTab === 'info' && (
                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -529,6 +632,14 @@ export default function ProfilePage() {
                         <div className="p-4 bg-gray-50 rounded-xl">
                           <p className="text-sm text-gray-500 mb-1">User ID</p>
                           <p className="font-mono text-sm font-medium text-gray-900">{profile._id}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-xl">
+                          <p className="text-sm text-gray-500 mb-1">Gender Preference</p>
+                          <p className="font-semibold text-gray-900">{profile.gender || 'Not specified'}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-xl">
+                          <p className="text-sm text-gray-500 mb-1">Style Vibe</p>
+                          <p className="font-semibold text-gray-900">{profile.preferredStyle || 'Not specified'}</p>
                         </div>
                       </div>
                     </div>
@@ -569,7 +680,7 @@ export default function ProfilePage() {
                               <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
                               <p className="text-gray-500 text-sm mt-1">{product.category}</p>
                               <div className="mt-2 flex items-center justify-between">
-                                <span className="font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                                <span className="font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
                                 <Link 
                                   href={`/products/${product._id}`}
                                   className="text-xs font-medium text-green-600 hover:text-green-700"
@@ -806,6 +917,28 @@ export default function ProfilePage() {
                     placeholder="https://example.com/image.jpg"
                   />
                   <p className="text-xs text-gray-500 mt-1">Paste a link to an image to update your avatar.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender Preference</label>
+                  <select
+                    value={editForm.gender}
+                    onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                  >
+                    <option value="Men">Men</option>
+                    <option value="Women">Women</option>
+                    <option value="Unisex">Unisex</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Style Preferences</label>
+                  <input 
+                    type="text" 
+                    value={editForm.preferredStyle}
+                    onChange={(e) => setEditForm({...editForm, preferredStyle: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
+                    placeholder="e.g. Minimalist, Streetwear, Vintage"
+                  />
                 </div>
                 <div className="pt-2">
                   <button 

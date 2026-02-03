@@ -156,7 +156,7 @@ export default function CheckoutPage() {
                 <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between text-base font-medium text-gray-900">
                         <p>Total</p>
-                        <p>${cartTotal.toFixed(2)}</p>
+                        <p>₹{cartTotal.toFixed(2)}</p>
                     </div>
                 </div>
 

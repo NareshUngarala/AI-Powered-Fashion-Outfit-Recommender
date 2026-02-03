@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { 
@@ -16,6 +16,19 @@ import ProductCard from '@/components/ProductCard';
 import { PRODUCTS } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 
+const CATEGORIES = [
+  'All',
+  'Tops',
+  'Bottoms', 
+  'Dresses',
+  'Outerwear',
+  'Footwear',
+  'Accessories',
+  'Formalwear',
+  'Activewear',
+  'Indian Wear'
+];
+
 export default function ShopPage() {
   const [aiEnabled, setAiEnabled] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -27,6 +40,9 @@ export default function ShopPage() {
   const [selectedOccasion, setSelectedOccasion] = useState<string>('');
   const [selectedVibe, setSelectedVibe] = useState<string>('');
   const [selectedSustainability, setSelectedSustainability] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch products from API with filters
   useEffect(() => {
@@ -37,6 +53,7 @@ export default function ShopPage() {
         const tags = [selectedOccasion, selectedVibe, selectedSustainability].filter(Boolean).join(',');
         
         if (tags) params.append('tags', tags);
+        if (selectedCategory && selectedCategory !== 'All') params.append('category', selectedCategory);
         
         const response = await fetch(`/api/products?${params.toString()}`);
         if (response.ok) {
@@ -48,12 +65,13 @@ export default function ShopPage() {
       } catch (error) {
         console.log('Using local mock data due to API error', error);
         // Fallback to local filtering if API fails
-        const filtered = [...PRODUCTS];
-        const activeTags = [selectedOccasion, selectedVibe, selectedSustainability].filter(Boolean);
-        // Simple client-side mock filter if tags match any property or just random for demo
-        if (activeTags.length > 0) {
-           // This is just a fallback, logic can be simple
-        }
+        const filtered = [...PRODUCTS].filter(p => {
+            if (selectedCategory === 'Indian Wear') {
+                return p.style === 'Traditional Wear';
+            }
+            const matchCategory = selectedCategory === 'All' || p.category.toLowerCase() === selectedCategory.toLowerCase();
+            return matchCategory;
+        });
         setProducts(filtered);
       } finally {
         setLoading(false);
@@ -66,7 +84,7 @@ export default function ShopPage() {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [selectedOccasion, selectedVibe, selectedSustainability]);
+  }, [selectedOccasion, selectedVibe, selectedSustainability, selectedCategory]);
 
   const toggleFilter = (setter: (val: string) => void, current: string, value: string) => {
     setter(current === value ? '' : value);
@@ -89,7 +107,7 @@ export default function ShopPage() {
           </button>
 
           {/* Left Sidebar - Filters */}
-          <aside className={`w-full lg:w-64 flex-shrink-0 space-y-8 pb-8 lg:h-full lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          <aside className={`w-full lg:w-64 flex-shrink-0 space-y-8 pb-8 lg:h-full lg:overflow-y-auto hide-scrollbar ${
             isMobileFiltersOpen ? 'block' : 'hidden lg:block'
           }`}>
             
@@ -181,45 +199,73 @@ export default function ShopPage() {
           </aside>
 
           {/* Main Content - Product Grid */}
-          <section className="flex-1 min-w-0 lg:h-full lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-20">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {selectedOccasion ? `Recommended for ${selectedOccasion}` : 'All Products'}
-                </h1>
-                <p className="text-gray-500 text-sm">Based on your style profile and current weather in New York.</p>
+          <section className="flex-1 min-w-0 lg:h-full flex flex-col">
+            {/* Sticky Header Container */}
+            <div className="flex-shrink-0 z-10 bg-gray-50 pb-4">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      {selectedOccasion ? `Recommended for ${selectedOccasion}` : 'All Products'}
+                  </h1>
+                  <p className="text-gray-500 text-sm">Based on your style profile and current weather in New York.</p>
+                </div>
+                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                  Sort: AI Match
+                  <SlidersHorizontal className="w-4 h-4 text-gray-400" />
+                </button>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                Sort: AI Match
-                <SlidersHorizontal className="w-4 h-4 text-gray-400" />
-              </button>
+
+              {/* Category Buttons Scroll */}
+              <div className="relative group">
+                {/* Scroll Container */}
+                <div 
+                  ref={scrollContainerRef}
+                  className="flex gap-3 overflow-x-auto hide-scrollbar scroll-smooth px-1 py-1"
+                >
+                  {CATEGORIES.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                        selectedCategory === category
+                          ? 'bg-gray-900 text-white shadow-lg shadow-gray-200 transform scale-105'
+                          : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Grid */}
-            {loading ? (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <div key={i} className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse" />
-                    ))}
-                 </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.length > 0 ? (
-                    products.map((product) => (
-                        <ProductCard key={product._id} product={product} />
-                    ))
-                ) : (
-                    <div className="col-span-full text-center py-12 text-gray-500">
-                        No products found matching your filters.
-                    </div>
-                )}
-                </div>
-            )}
+            {/* Scrollable Grid */}
+            <div className="flex-1 overflow-y-auto hide-scrollbar pb-20">
+              {loading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                          <div key={i} className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse" />
+                      ))}
+                  </div>
+              ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {products.length > 0 ? (
+                      products.map((product) => (
+                          <ProductCard key={product._id} product={product} />
+                      ))
+                  ) : (
+                      <div className="col-span-full text-center py-12 text-gray-500">
+                          No products found matching your filters.
+                      </div>
+                  )}
+                  </div>
+              )}
+            </div>
           </section>
 
           {/* Right Sidebar - Cart Preview */}
-          <aside className="w-full lg:w-80 flex-shrink-0 lg:h-full lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-8">
+          <aside className="w-full lg:w-80 flex-shrink-0 lg:h-full lg:overflow-y-auto hide-scrollbar pb-8">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -245,7 +291,7 @@ export default function ShopPage() {
                         <h4 className="text-sm font-medium text-gray-900 truncate">{item.name}</h4>
                         <p className="text-xs text-gray-500">{item.size} • {item.color}</p>
                         <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-semibold text-gray-900">${item.price}</span>
+                          <span className="text-sm font-semibold text-gray-900">₹{item.price}</span>
                           <button 
                             onClick={() => removeFromCart(item.cartId)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
@@ -264,7 +310,7 @@ export default function ShopPage() {
                 <div className="pt-6 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-gray-600">Total</span>
-                    <span className="text-xl font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-gray-900">₹{cartTotal.toFixed(2)}</span>
                   </div>
                   <Link 
                     href="/checkout"
