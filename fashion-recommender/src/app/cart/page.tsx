@@ -8,7 +8,6 @@ import {
   Trash2, 
   Plus, 
   Minus, 
-  Sparkles, 
   Lock, 
   CreditCard
 } from 'lucide-react';
@@ -16,7 +15,7 @@ import {
 import { useCart } from '@/context/CartContext';
 
 export default function CartPage() {
-  const { items: cartItems, removeFromCart, cartTotal } = useCart();
+  const { items: cartItems, removeFromCart, updateQuantity, cartTotal } = useCart();
   
   const tax = cartTotal * 0.085; // 8.5% tax
   const total = cartTotal + tax;
@@ -31,7 +30,7 @@ export default function CartPage() {
                <ArrowLeft className="w-8 h-8 text-gray-400" />
              </div>
              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-             <p className="text-gray-500 mb-8">Looks like you haven't added any items yet.</p>
+             <p className="text-gray-500 mb-8">Looks like you haven&apos;t added any items yet.</p>
              <Link href="/shop" className="inline-block px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-200">
                Start Shopping
              </Link>
@@ -78,7 +77,7 @@ export default function CartPage() {
                     <Link href={`/products/${item.id}`} className="hover:text-green-600 transition-colors">
                       <h3 className="text-base font-bold text-gray-900">{item.name}</h3>
                     </Link>
-                    <p className="text-base font-bold text-gray-900">${item.price.toFixed(2)}</p>
+                    <p className="text-base font-bold text-gray-900">₹{item.price.toFixed(2)}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
@@ -92,11 +91,18 @@ export default function CartPage() {
                   <div className="flex items-center justify-between mt-auto">
                     {/* Quantity */}
                     <div className="flex items-center gap-2">
-                      <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <button 
+                        onClick={() => updateQuantity(item.cartId, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
+                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="font-bold text-gray-900 w-4 text-center text-sm">{item.quantity}</span>
-                      <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <button 
+                        onClick={() => updateQuantity(item.cartId, item.quantity + 1)}
+                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
+                      >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
@@ -124,7 +130,7 @@ export default function CartPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Subtotal</span>
-                  <span className="font-medium text-gray-900">${cartTotal.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">₹{cartTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Estimated Shipping</span>
@@ -132,12 +138,12 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Estimated Tax</span>
-                  <span className="font-medium text-gray-900">${tax.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">₹{tax.toFixed(2)}</span>
                 </div>
                 <div className="h-px bg-gray-100 my-3" />
                 <div className="flex justify-between items-end">
                   <span className="text-lg font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-green-500">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-green-500">₹{total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -185,7 +191,7 @@ export default function CartPage() {
                    <h3 className="text-xs font-bold text-green-800">AI Stylist Tip</h3>
                    <p className="text-xs text-green-700 leading-relaxed">
                      Adding our <span className="font-bold">Satin Scarf</span> would complete this outfit perfectly. 
-                     <button className="ml-1 underline font-bold hover:text-green-900">Add for $45</button>
+                     <button className="ml-1 underline font-bold hover:text-green-900">Add for ₹45</button>
                    </p>
                  </div>
                </div>

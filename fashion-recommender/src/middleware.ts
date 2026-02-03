@@ -2,7 +2,7 @@ import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 export default withAuth(
-  function middleware(req) {
+  function middleware() {
     return NextResponse.next();
   },
   {
@@ -27,6 +27,6 @@ export const config = {
      * - logo.jpg (logo file)
      * - logo.png (logo file)
      */
-    "/((?!auth/signin|api|_next/static|_next/image|favicon.ico|logo.jpg|logo.png).*)",
+    "/((?!auth/signin|auth/signup|api|_next/static|_next/image|favicon.ico|logo.jpg|logo.png).*)",
   ],
 };

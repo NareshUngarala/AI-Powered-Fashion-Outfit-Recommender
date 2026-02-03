@@ -1,9 +1,35 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import TrendingSection from '@/components/TrendingSection';
+import connectToDatabase from '@/lib/mongodb';
+import Collection from '@/models/Collection';
 
-export default function Home() {
+interface ICollection {
+  _id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  description?: string;
+  featured?: boolean;
+}
+
+async function getCollections() {
+  try {
+    await connectToDatabase();
+    const collections = await Collection.find({ featured: true }).limit(4).lean();
+    return JSON.parse(JSON.stringify(collections));
+  } catch (error) {
+    console.error('Failed to fetch collections', error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const collections = await getCollections();
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-green-100 selection:text-green-900">
       <Navbar />
@@ -14,10 +40,11 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* Left Image */}
             <div className="relative aspect-[3/4] lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-gray-100 order-2 lg:order-1">
-              <img 
+              <Image 
                 src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop" 
                 alt="Fashionable model in neutral tones" 
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
             </div>
@@ -42,8 +69,8 @@ export default function Home() {
                 <Link href="/stylist" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-white bg-green-600 rounded-full hover:bg-green-700 transition-all shadow-lg shadow-green-200 hover:shadow-green-300">
                   Get My AI Look
                 </Link>
-                <Link href="/shop" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all">
-                  Explore Trends
+                <Link href="/collections" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all">
+                  Explore Styles
                 </Link>
               </div>
 
@@ -85,67 +112,41 @@ export default function Home() {
         </section>
 
         {/* Trending Now Section */}
-        <section className="w-full px-4 sm:px-8 lg:px-12 py-12">
+        <TrendingSection />
+
+        {/* Shop by Style Section */}
+        <section className="w-full px-4 sm:px-8 lg:px-12 py-12 bg-white">
            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Trending Now</h2>
-              <Link href="/shop" className="text-green-600 font-medium hover:text-green-700 flex items-center gap-1">
-                 View All <ArrowRight className="w-4 h-4" />
+              <h2 className="text-3xl font-bold text-gray-900">Shop by Style</h2>
+              <Link href="/collections" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1">
+                View all <ArrowRight className="w-4 h-4" />
               </Link>
            </div>
            
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-              {[
-                 { name: "Oversized Blazer", price: 189.00, img: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&q=80&w=800", cat: "Outerwear" },
-                 { name: "Eco-Knit Sweater", price: 120.00, img: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&q=80&w=800", cat: "Tops" },
-                 { name: "Tailored Trousers", price: 145.00, img: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&q=80&w=800", cat: "Bottoms" },
-                 { name: "Leather Boots", price: 210.00, img: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&q=80&w=800", cat: "Footwear" },
-              ].map((item, i) => (
-                 <Link href="/products/demo" key={i} className="group cursor-pointer block">
-                    <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100 mb-4">
-                       <img 
-                          src={item.img} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                       />
-                       <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-red-500">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                       </button>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 group-hover:text-green-700 transition-colors">{item.name}</h3>
-                    <p className="text-sm text-gray-500 mb-2">{item.cat}</p>
-                    <p className="text-green-600 font-semibold">${item.price.toFixed(2)}</p>
-                 </Link>
-              ))}
-           </div>
-        </section>
-
-        {/* Collections Section */}
-        <section className="w-full px-4 sm:px-8 lg:px-12 py-12 bg-white">
-           <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Curated Collections</h2>
-           </div>
-           
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                 { title: "Sustainable Chic", img: "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?auto=format&fit=crop&q=80&w=800" },
-                 { title: "Work From Anywhere", img: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&q=80&w=800" },
-                 { title: "Date Night AI Picks", img: "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?auto=format&fit=crop&q=80&w=800" },
-              ].map((collection, i) => (
-                 <div key={i} className="group relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl cursor-pointer">
-                    <img 
-                       src={collection.img} 
-                       alt={collection.title} 
-                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-8 w-full">
-                       <h3 className="text-2xl font-bold text-white mb-4">{collection.title}</h3>
-                       <span className="inline-flex items-center text-sm font-semibold text-white group-hover:text-green-300 transition-colors">
-                          Shop Collection <ArrowRight className="ml-2 w-4 h-4" />
-                       </span>
-                    </div>
-                 </div>
-              ))}
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {collections.length > 0 ? (
+                collections.map((collection: ICollection) => (
+                   <Link key={collection._id} href={`/collections/${collection.slug}`} className="group relative aspect-[3/4] overflow-hidden rounded-2xl cursor-pointer">
+                      <Image 
+                         src={collection.imageUrl || 'https://via.placeholder.com/600x800'} 
+                         alt={collection.name} 
+                         fill
+                         className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-6 w-full">
+                         <h3 className="text-xl font-bold text-white mb-2">{collection.name}</h3>
+                         <span className="inline-flex items-center text-sm font-semibold text-white/90 group-hover:text-white transition-colors">
+                            Explore <ArrowRight className="ml-2 w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                         </span>
+                      </div>
+                   </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10 text-gray-500">
+                  <p>No styles found. <Link href="/api/seed" className="underline text-blue-600">Seed the database</Link></p>
+                </div>
+              )}
            </div>
         </section>
 

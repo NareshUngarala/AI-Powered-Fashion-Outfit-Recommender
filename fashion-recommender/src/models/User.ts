@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 
 const UserSchema = new Schema({
   name: {
@@ -16,6 +16,15 @@ const UserSchema = new Schema({
   },
   image: {
     type: String,
+  },
+  gender: {
+    type: String,
+    enum: ['Men', 'Women', 'Unisex'],
+    default: 'Unisex',
+  },
+  preferredStyle: {
+    type: String,
+    default: 'Casual',
   },
   createdAt: {
     type: Date,

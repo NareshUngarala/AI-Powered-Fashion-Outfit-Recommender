@@ -1,22 +1,40 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PRODUCTS } from '@/data/products';
-import { ArrowRight } from 'lucide-react';
+
+interface Collection {
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  featured: boolean;
+}
 
 export default function CollectionsPage() {
-  // Group products by category to get unique categories and a representative image
-  const categoriesMap = PRODUCTS.reduce((acc, product) => {
-    const category = product.category || 'Uncategorized';
-    if (!acc[category]) {
-      acc[category] = product.imageUrl; // Store the first image found for this category
-    }
-    return acc;
-  }, {} as Record<string, string>);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categories = Object.keys(categoriesMap).sort();
+  useEffect(() => {
+    async function fetchCollections() {
+      try {
+        const res = await fetch('/api/collections');
+        const data = await res.json();
+        if (data.success) {
+          setCollections(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch collections:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCollections();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 selection:bg-green-100 selection:text-green-900">
@@ -27,42 +45,66 @@ export default function CollectionsPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="space-y-4">
             <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-gray-900">
-              The Collections
+              The Styles
             </h1>
             <p className="text-gray-500 italic text-lg max-w-xl">
-              AI-curated edits defining the season's mood. Explore the future of fashion.
+              AI-curated edits defining the season&apos;s mood. Explore the future of fashion.
             </p>
           </div>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {categories.map((category) => (
-            <Link 
-              key={category} 
-              href={`/collections/${encodeURIComponent(category)}`}
-              className="block relative aspect-[3/4] rounded-xl overflow-hidden group cursor-pointer"
-            >
-              <Image
-                src={categoriesMap[category]}
-                alt={category}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+        {/* Styles Grid - Replicating the provided UI */}
+        {loading ? (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-[3/4] bg-gray-100 rounded-3xl animate-pulse" />
+              ))}
+           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[400px]">
+            {collections.map((collection, index) => {
+              // Logic to vary card sizes/aspects to mimic the bento/masonry layout
+              // Index 0: Large Vertical (Row span 2)
+              // Index 1: Standard
+              // Index 2: Standard
+              // Index 3: Standard
+              const isLarge = index === 0;
+              const isWide = index === 3;
               
-              <div className="absolute bottom-0 left-0 p-4 w-full">
-                <span className="inline-block px-2 py-0.5 bg-green-500 text-white text-[8px] font-bold uppercase tracking-wider mb-2">
-                  Collection
-                </span>
-                <div className="flex items-end justify-between">
-                  <h3 className="text-lg font-serif text-white leading-tight">{category}</h3>
-                  <ArrowRight className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-5px] group-hover:translate-x-0 duration-300" />
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              return (
+                <Link 
+                  key={collection._id} 
+                  href={`/collections/${collection.slug}`}
+                  className={`relative group cursor-pointer overflow-hidden rounded-3xl ${isLarge ? 'md:row-span-2 md:h-full' : ''} ${isWide ? 'md:col-span-2' : ''}`}
+                >
+                  <Image
+                    src={collection.imageUrl || 'https://via.placeholder.com/600x800?text=No+Image'}
+                    alt={collection.name}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+                  
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 p-8 w-full">
+                    {/* Optional Badge for specific items or random */}
+                    {(index === 0 || collection.featured) && (
+                      <span className="inline-block px-3 py-1 bg-green-500 text-white text-[10px] font-bold uppercase tracking-wider mb-3 rounded-full">
+                        {index === 0 ? 'New Season' : 'Trending'}
+                      </span>
+                    )}
+                    
+                    <h3 className="text-3xl font-bold text-white leading-tight font-serif tracking-wide">
+                      {collection.name}
+                    </h3>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );

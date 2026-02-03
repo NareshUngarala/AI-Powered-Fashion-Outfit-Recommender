@@ -14,6 +14,7 @@ async function getProduct(id: string) {
     return {
       ...mockProduct,
       tags: [], // Mock data might not have tags, provide default
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
       description: (mockProduct as any).description || "No description available", // Type assertion for now
     };
   }
@@ -28,7 +29,7 @@ async function getProduct(id: string) {
       _id: product._id.toString(),
       createdAt: product.createdAt?.toString(),
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -41,6 +42,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
     return (
       <div className="min-h-screen bg-white">
         <Navbar />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <ProductDetailClient product={{} as any} />
       </div>
     );
@@ -55,6 +57,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ProductDetailClient product={product as any} />
     </div>
   );
