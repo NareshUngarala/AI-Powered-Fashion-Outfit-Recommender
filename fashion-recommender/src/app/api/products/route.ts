@@ -1,61 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import Product from '@/models/Product';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
-    
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const tags = searchParams.get('tags');
-    const search = searchParams.get('search');
-    const featured = searchParams.get('featured');
-    const limit = searchParams.get('limit');
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const query: any = {};
-
-    if (category) {
-      if (category.toLowerCase() === 'indian wear') {
-        query.style = 'Traditional Wear';
-      } else {
-        query.category = { $regex: new RegExp(category, 'i') };
-      }
-    }
-
-    if (tags) {
-      const tagsList = tags.split(',').map(t => t.trim());
-      if (tagsList.length > 0) {
-        query.tags = { $in: tagsList.map(t => new RegExp(t, 'i')) };
-      }
-    }
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
-    }
+    // Forward the query string directly to Python backend
+    const queryString = searchParams.toString();
     
-    // If 'featured' is requested but not in schema, we might mock it or look for specific tags
-    if (featured === 'true') {
-        // For now, if 'featured' field doesn't exist, maybe return 'New Arrivals' or just ignore
-        // Or if we added it to schema later. 
-        // Let's assume we might look for a 'Featured' tag or just latest items
+    const response = await fetch(`http://localhost:8000/products?${queryString}`, {
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Python backend error: ${response.statusText}`);
     }
 
-    let productQuery = Product.find(query).sort({ createdAt: -1 });
-    
-    if (limit) {
-      productQuery = productQuery.limit(parseInt(limit));
-    }
-
-    const products = await productQuery;
+    const products = await response.json();
 
     return NextResponse.json({ success: true, data: products }, { status: 200 });
   } catch (error: unknown) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching products from Python backend:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to fetch products', error: (error as Error).message },
       { status: 500 }

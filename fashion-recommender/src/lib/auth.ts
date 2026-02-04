@@ -1,8 +1,5 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import connectToDatabase from "./mongodb";
-import User from "@/models/User";
-import { compare } from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,26 +14,33 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        await connectToDatabase();
+        try {
+            const backendUrl = process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
+            const response = await fetch(`${backendUrl}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: credentials.email,
+                    password: credentials.password,
+                }),
+            });
 
-        const user = await User.findOne({ email: credentials.email });
+            if (!response.ok) {
+                return null;
+            }
 
-        if (!user) {
-          throw new Error("User not found");
+            const user = await response.json();
+            
+            // Map _id to id for NextAuth compatibility
+            if (user && user._id && !user.id) {
+                user.id = user._id;
+            }
+            
+            return user;
+        } catch (error) {
+            console.error("Auth error:", error);
+            return null;
         }
-
-        const isPasswordValid = await compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          throw new Error("Invalid password");
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
       },
     }),
   ],
@@ -53,7 +57,8 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        // @ts-expect-error: user type from backend includes _id
+        token.id = user.id || user._id;
       }
       return token;
     },

@@ -5,34 +5,26 @@ import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { 
   SlidersHorizontal, 
-  ShoppingBag, 
-  Trash2, 
-  ArrowRight,
   Check,
-  ChevronDown
+  ChevronDown,
+  X
 } from 'lucide-react';
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
 import { PRODUCTS } from '@/data/products';
-import { useCart } from '@/context/CartContext';
 
-const CATEGORIES = [
-  'All',
-  'Tops',
-  'Bottoms', 
-  'Dresses',
-  'Outerwear',
-  'Footwear',
-  'Accessories',
-  'Formalwear',
-  'Activewear',
-  'Indian Wear'
-];
+// Extract unique categories from products
+const CATEGORIES = ['All', ...Array.from(new Set(PRODUCTS.map(p => p.category))).sort()];
+
+const getCategoryImage = (category: string) => {
+  if (category === 'All') return null;
+  const product = PRODUCTS.find(p => p.category === category);
+  return product ? product.imageUrl : null;
+};
 
 export default function ShopPage() {
   const [aiEnabled, setAiEnabled] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const { items, removeFromCart, cartTotal, cartCount } = useCart();
   const [products, setProducts] = useState(PRODUCTS);
   const [loading, setLoading] = useState(true);
 
@@ -66,10 +58,7 @@ export default function ShopPage() {
         console.log('Using local mock data due to API error', error);
         // Fallback to local filtering if API fails
         const filtered = [...PRODUCTS].filter(p => {
-            if (selectedCategory === 'Indian Wear') {
-                return p.style === 'Traditional Wear';
-            }
-            const matchCategory = selectedCategory === 'All' || p.category.toLowerCase() === selectedCategory.toLowerCase();
+            const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
             return matchCategory;
         });
         setProducts(filtered);
@@ -86,25 +75,53 @@ export default function ShopPage() {
     return () => clearTimeout(timeoutId);
   }, [selectedOccasion, selectedVibe, selectedSustainability, selectedCategory]);
 
+  // AI Recommendation Logic for New York Weather (Cold/Winter)
+  const recommendedProducts = PRODUCTS.filter(p => {
+    const searchString = (
+      (p.tags?.join(' ') || '') + ' ' + 
+      p.description + ' ' + 
+      p.name + ' ' + 
+      (p.material || '') + ' ' +
+      p.category
+    ).toLowerCase();
+    
+    // Filter for Winter/Cold weather items (Jackets, Denim, Wool, Suits, Thick materials)
+    const isWinterAppropriate = /jacket|coat|blazer|wool|denim|suit|sweatshirt|hoodie|thick/i.test(searchString);
+    
+    // Filter for "Style Profile" (Simulated as Trendy/Casual/Formal mix, excluding pure traditional unless fusion)
+    // For this demo, let's prioritize high match scores if they exist, or just general style
+    const isStyleMatch = p.match > 90; // Simulate "User Profile" match
+    
+    return isWinterAppropriate && isStyleMatch;
+  }).slice(0, 4); // Show top 4
+
   const toggleFilter = (setter: (val: string) => void, current: string, value: string) => {
     setter(current === value ? '' : value);
   };
 
   return (
-    <div className="min-h-screen lg:h-screen flex flex-col bg-gray-50 font-sans text-gray-900 selection:bg-green-100 selection:text-green-900 lg:overflow-hidden">
+    <div className="min-h-screen lg:h-screen flex flex-col bg-gray-50 font-sans text-gray-900 selection:bg-green-100 selection:text-green-900 lg:overflow-hidden overflow-x-hidden">
       <Navbar />
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 lg:overflow-hidden">
-        <div className="flex flex-col lg:flex-row gap-8 lg:h-full pt-6">
+        <div className="flex flex-col lg:flex-row gap-8 md:gap-0 lg:gap-8 lg:h-full pt-6 md:pt-2">
           
           {/* Mobile Filter Toggle */}
-          <button 
-            className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700"
-            onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            {isMobileFiltersOpen ? 'Hide Filters' : 'Show Filters'}
-          </button>
+          <div className="lg:hidden flex justify-end md:mb-1">
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 md:w-10 md:h-10 md:rounded-full md:justify-center md:p-0 md:shadow-md md:border-gray-200"
+              onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+            >
+              {isMobileFiltersOpen ? (
+                <X className="w-4 h-4 md:w-4 md:h-4" />
+              ) : (
+                <SlidersHorizontal className="w-4 h-4 md:w-4 md:h-4" />
+              )}
+              <span className="md:hidden">
+                  {isMobileFiltersOpen ? 'Hide Filters' : 'Show Filters'}
+              </span>
+            </button>
+          </div>
 
           {/* Left Sidebar - Filters */}
           <aside className={`w-full lg:w-64 flex-shrink-0 space-y-8 pb-8 lg:h-full lg:overflow-y-auto hide-scrollbar ${
@@ -203,17 +220,15 @@ export default function ShopPage() {
             {/* Sticky Header Container */}
             <div className="flex-shrink-0 z-10 bg-gray-50 pb-4">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-1">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                      {selectedOccasion ? `Recommended for ${selectedOccasion}` : 'All Products'}
-                  </h1>
-                  <p className="text-gray-500 text-sm">Based on your style profile and current weather in New York.</p>
+                  {selectedOccasion && (
+                    <h1 className="text-3xl font-bold text-gray-900 mb-0">
+                        Recommended for {selectedOccasion}
+                    </h1>
+                  )}
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                  Sort: AI Match
-                  <SlidersHorizontal className="w-4 h-4 text-gray-400" />
-                </button>
+{/* Removed Sort Button */}
               </div>
 
               {/* Category Buttons Scroll */}
@@ -221,21 +236,51 @@ export default function ShopPage() {
                 {/* Scroll Container */}
                 <div 
                   ref={scrollContainerRef}
-                  className="flex gap-3 overflow-x-auto hide-scrollbar scroll-smooth px-1 py-1"
+                  className="flex gap-6 overflow-x-auto hide-scrollbar scroll-smooth px-1 pt-4 pb-4"
                 >
-                  {CATEGORIES.map((category) => (
+                  {CATEGORIES.map((category) => {
+                    const categoryImage = getCategoryImage(category);
+                    const isSelected = selectedCategory === category;
+                    
+                    return (
                     <button
                       key={category}
                       onClick={() => setSelectedCategory(category)}
-                      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                        selectedCategory === category
-                          ? 'bg-gray-900 text-white shadow-lg shadow-gray-200 transform scale-105'
-                          : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className="flex flex-col items-center gap-3 flex-shrink-0 group/item"
                     >
-                      {category}
+                      {/* Circle Container */}
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center border relative overflow-hidden transition-all duration-300 transform ${
+                        isSelected 
+                          ? category === 'All' 
+                            ? 'bg-gray-900 border-gray-900 text-white shadow-xl scale-110 ring-1 ring-offset-2 ring-gray-900'
+                            : 'bg-white border-green-600 text-green-600 shadow-xl scale-110 ring-1 ring-offset-2 ring-green-600'
+                          : 'bg-white border-gray-200 text-gray-400 shadow-sm group-hover/item:border-green-400 group-hover/item:text-green-600 group-hover/item:shadow-lg group-hover/item:scale-105'
+                      }`}>
+                        {category === 'All' ? (
+                          <span className="text-xs font-bold z-10">ALL</span>
+                        ) : (
+                          categoryImage && (
+                            <Image 
+                              src={categoryImage} 
+                              alt={category} 
+                              fill 
+                              className="object-cover transition-transform duration-500 group-hover/item:scale-110"
+                              sizes="64px"
+                            />
+                          )
+                        )}
+                      </div>
+                      
+                      {/* Label */}
+                      <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-300 ${
+                        isSelected 
+                          ? category === 'All' ? 'text-gray-900' : 'text-green-700'
+                          : 'text-gray-400 group-hover/item:text-gray-600'
+                      }`}>
+                        {category === 'All' ? 'Everything' : category}
+                      </span>
                     </button>
-                  ))}
+                  )})}
                 </div>
               </div>
             </div>
@@ -245,83 +290,60 @@ export default function ShopPage() {
               {loading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                          <div key={i} className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse" />
+                          <div key={i} className="aspect-[4/5] bg-gray-200 rounded-lg animate-pulse" />
                       ))}
                   </div>
               ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.length > 0 ? (
-                      products.map((product) => (
-                          <ProductCard key={product._id} product={product} />
-                      ))
-                  ) : (
-                      <div className="col-span-full text-center py-12 text-gray-500">
-                          No products found matching your filters.
-                      </div>
-                  )}
-                  </div>
+                  <>
+                    {/* Combined Grid for Mobile/Tablet (to fix flow issues) */}
+                    <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        {(recommendedProducts.length > 0 && !selectedOccasion && selectedCategory === 'All') && 
+                            recommendedProducts.map((product) => (
+                                <ProductCard key={`rec-${product._id}`} product={product} />
+                            ))
+                        }
+                        {products.length > 0 ? (
+                            products.map((product) => (
+                                <ProductCard key={product._id} product={product} />
+                            ))
+                        ) : (
+                            !((recommendedProducts.length > 0 && !selectedOccasion && selectedCategory === 'All')) && (
+                                <div className="col-span-full text-center py-12 text-gray-500">
+                                    No products found matching your filters.
+                                </div>
+                            )
+                        )}
+                    </div>
+
+                    {/* Separate Grids for Desktop (to maintain specific column counts) */}
+                    <div className="hidden lg:block">
+                        {recommendedProducts.length > 0 && !selectedOccasion && selectedCategory === 'All' && (
+                        <div className="mb-6">
+                            <div className="grid grid-cols-4 gap-6">
+                            {recommendedProducts.map((product) => (
+                                <ProductCard key={`rec-${product._id}`} product={product} />
+                            ))}
+                            </div>
+                        </div>
+                        )}
+
+                        <div className="grid grid-cols-3 xl:grid-cols-4 gap-6">
+                        {products.length > 0 ? (
+                            products.map((product) => (
+                                <ProductCard key={product._id} product={product} />
+                            ))
+                        ) : (
+                            <div className="col-span-full text-center py-12 text-gray-500">
+                                No products found matching your filters.
+                            </div>
+                        )}
+                        </div>
+                    </div>
+                  </>
               )}
             </div>
           </section>
 
-          {/* Right Sidebar - Cart Preview */}
-          <aside className="w-full lg:w-80 flex-shrink-0 lg:h-full lg:overflow-y-auto hide-scrollbar pb-8">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-gray-900" />
-                  <h2 className="text-lg font-bold text-gray-900">Cart Preview</h2>
-                </div>
-                <span className="px-2 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600">{cartCount} items</span>
-              </div>
-
-              {/* Cart Items */}
-              {items.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 text-sm">
-                  Your cart is empty.
-                </div>
-              ) : (
-                <div className="space-y-4 mb-6">
-                  {items.map((item) => (
-                    <div key={`${item.id}-${item.size}-${item.color}`} className="flex gap-3 group">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 relative">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">{item.name}</h4>
-                        <p className="text-xs text-gray-500">{item.size} • {item.color}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-semibold text-gray-900">₹{item.price}</span>
-                          <button 
-                            onClick={() => removeFromCart(item.cartId)}
-                            className="text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Total & Checkout */}
-              {items.length > 0 && (
-                <div className="pt-6 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-gray-600">Total</span>
-                    <span className="text-xl font-bold text-gray-900">₹{cartTotal.toFixed(2)}</span>
-                  </div>
-                  <Link 
-                    href="/checkout"
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-xl font-semibold hover:bg-black transition-all shadow-lg shadow-gray-200"
-                  >
-                    Checkout <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              )}
-            </div>
-          </aside>
         </div>
       </main>
     </div>

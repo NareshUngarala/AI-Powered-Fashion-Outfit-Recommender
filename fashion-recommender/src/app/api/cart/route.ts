@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import Cart from '@/models/Cart';
 
 // Helper to get user ID from session
 async function getUserId() {
@@ -15,21 +13,19 @@ async function getUserId() {
   return session.user.id;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_req: Request) {
   const userId = await getUserId();
   if (!userId) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
 
-  await connectToDatabase();
-
   try {
-    let cart = await Cart.findOne({ userId });
+    const response = await fetch(`http://localhost:8000/cart/${userId}`, {
+        cache: 'no-store'
+    });
 
-    if (!cart) {
-      cart = await Cart.create({ userId, items: [] });
-    }
+    if (!response.ok) throw new Error('Backend error');
+    const cart = await response.json();
 
     return NextResponse.json({ success: true, data: cart });
   } catch (error) {
@@ -44,31 +40,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
 
-  await connectToDatabase();
-
   try {
     const body = await req.json();
-    const { productId, quantity, size, color, name, price, image } = body;
+    
+    const response = await fetch(`http://localhost:8000/cart/${userId}/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-    let cart = await Cart.findOne({ userId });
-    if (!cart) {
-      cart = new Cart({ userId, items: [] });
-    }
+    if (!response.ok) throw new Error('Backend error');
+    const cart = await response.json();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const itemIndex = cart.items.findIndex((item: any) => 
-      item.productId.toString() === productId && 
-      item.size === size && 
-      item.color === color
-    );
-
-    if (itemIndex > -1) {
-      cart.items[itemIndex].quantity += quantity;
-    } else {
-      cart.items.push({ productId, quantity, size, color, name, price, image });
-    }
-
-    await cart.save();
     return NextResponse.json({ success: true, data: cart });
   } catch (error) {
     console.error('Cart add error:', error);
@@ -82,31 +65,28 @@ export async function PUT(req: Request) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
   
-  await connectToDatabase();
   try {
-    const { productId, size, color, quantity } = await req.json();
+    const body = await req.json();
     
-    const cart = await Cart.findOne({ userId });
-    if (!cart) return NextResponse.json({ success: false, message: 'Cart not found' }, { status: 404 });
+    // Pass minimal data for update, relying on Python to handle optional fields
+    const payload = {
+        productId: body.productId,
+        quantity: body.quantity,
+        size: body.size,
+        color: body.color,
+        // Provide defaults if needed by Pydantic strict mode, but Optional fields should be fine
+    };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const itemIndex = cart.items.findIndex((item: any) => 
-      item.productId.toString() === productId && 
-      item.size === size && 
-      item.color === color
-    );
-
-    if (itemIndex > -1) {
-      if (quantity > 0) {
-        cart.items[itemIndex].quantity = quantity;
-      } else {
-        cart.items.splice(itemIndex, 1);
-      }
-      await cart.save();
-      return NextResponse.json({ success: true, data: cart });
-    }
+    const response = await fetch(`http://localhost:8000/cart/${userId}/update`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
     
-    return NextResponse.json({ success: false, message: 'Item not found in cart' }, { status: 404 });
+    if (!response.ok) throw new Error('Backend error');
+    const cart = await response.json();
+
+    return NextResponse.json({ success: true, data: cart });
   } catch (error) {
     console.error('Cart update error:', error);
     return NextResponse.json({ success: false, error: 'Failed to update cart' }, { status: 500 });
@@ -114,38 +94,33 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const userId = await getUserId();
-  if (!userId) {
-    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-  }
-
-  await connectToDatabase();
-  try {
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get('productId');
-    const size = searchParams.get('size');
-    const color = searchParams.get('color');
-
-    const cart = await Cart.findOne({ userId });
-    if (!cart) return NextResponse.json({ success: false, message: 'Cart not found' }, { status: 404 });
-
-    const initialLength = cart.items.length;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cart.items = cart.items.filter((item: any) => 
-      !(item.productId.toString() === productId && 
-        (item.size || '') === (size || '') && 
-        (item.color || '') === (color || ''))
-    );
-
-    if (cart.items.length === initialLength) {
-       // Try looser match if explicit match failed (sometimes null vs undefined)
-       // But keeping it strict is safer.
+    const userId = await getUserId();
+    if (!userId) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
+  
+    try {
+      const { searchParams } = new URL(req.url);
+      const productId = searchParams.get('productId');
+      const size = searchParams.get('size') || undefined;
+      const color = searchParams.get('color') || undefined;
 
-    await cart.save();
-    return NextResponse.json({ success: true, data: cart });
-  } catch (error) {
-     console.error('Cart delete error:', error);
-     return NextResponse.json({ success: false, error: 'Failed to delete item' }, { status: 500 });
-  }
+      if (!productId) return NextResponse.json({ success: false, message: 'Missing product ID' }, { status: 400 });
+
+      const query = new URLSearchParams({ productId });
+      if (size) query.append('size', size);
+      if (color) query.append('color', color);
+
+      const response = await fetch(`http://localhost:8000/cart/${userId}/item?${query.toString()}`, {
+          method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Backend error');
+      const cart = await response.json();
+  
+      return NextResponse.json({ success: true, data: cart });
+    } catch (error) {
+      console.error('Cart delete error:', error);
+      return NextResponse.json({ success: false, error: 'Failed to delete cart item' }, { status: 500 });
+    }
 }

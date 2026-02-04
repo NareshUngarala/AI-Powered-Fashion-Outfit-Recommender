@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import Wishlist from '@/models/Wishlist';
 
 export async function GET() {
   try {
@@ -11,19 +9,22 @@ export async function GET() {
     if (!session || !session.user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    await connectToDatabase();
     
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     
-    const wishlist = await Wishlist.findOne({ userId }).populate('products');
-
-    if (!wishlist) {
-      return NextResponse.json({ success: true, data: [] });
+    if (!userId) {
+      return NextResponse.json({ message: 'Unauthorized: User ID missing' }, { status: 401 });
     }
+    
+    const response = await fetch(`http://localhost:8000/wishlist/${userId}`, {
+        cache: 'no-store'
+    });
+    
+    if (!response.ok) throw new Error('Backend error');
+    const wishlist = await response.json();
 
-    return NextResponse.json({ success: true, data: wishlist.products });
+    return NextResponse.json({ success: true, data: wishlist.products || [] });
   } catch (error) {
     console.error('Wishlist GET error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
@@ -43,21 +44,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Product ID required' }, { status: 400 });
     }
 
-    await connectToDatabase();
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    let wishlist = await Wishlist.findOne({ userId });
-
-    if (!wishlist) {
-      wishlist = await Wishlist.create({ userId, products: [productId] });
-    } else {
-      // Add if not exists
-      if (!wishlist.products.includes(productId)) {
-        wishlist.products.push(productId);
-        await wishlist.save();
-      }
+    if (!userId) {
+      return NextResponse.json({ message: 'Unauthorized: User ID missing' }, { status: 401 });
     }
+
+    const response = await fetch(`http://localhost:8000/wishlist/${userId}/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }), // Note: Python expects Body(..., embed=True) which usually means { "productId": "..." }
+    });
+
+    if (!response.ok) throw new Error('Backend error');
 
     return NextResponse.json({ success: true, message: 'Added to wishlist' });
   } catch (error) {

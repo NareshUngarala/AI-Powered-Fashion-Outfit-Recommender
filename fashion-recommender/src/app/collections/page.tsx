@@ -41,18 +41,7 @@ export default function CollectionsPage() {
       <Navbar />
 
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-gray-900">
-              The Styles
-            </h1>
-            <p className="text-gray-500 italic text-lg max-w-xl">
-              AI-curated edits defining the season&apos;s mood. Explore the future of fashion.
-            </p>
-          </div>
-        </div>
-
+        
         {/* Styles Grid - Replicating the provided UI */}
         {loading ? (
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,0 +1,78 @@
+# AI-Powered Fashion Outfit Recommender - Run & Test Commands
+
+## 1. Prerequisites
+- Python 3.8+ installed
+- Node.js 18+ installed
+- MongoDB instance running (locally or Atlas)
+- `.env.local` file configured in the project root
+
+## 2. Start the Backend (Python/FastAPI)
+Open a terminal and run:
+
+```bash
+cd backend
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+# source venv/bin/activate
+
+pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
+```
+
+## 3. Start the Frontend (Next.js)
+Open a **new** terminal and run:
+
+```bash
+# From the project root (fashion-recommender)
+npm install
+npm run dev
+```
+Access the app at: http://localhost:3000
+
+## 4. Run Tests
+Ensure the backend is running (step 2) before running tests.
+
+### Run End-to-End Backend Tests
+Verifies the entire flow: Auth, Products, Cart, Wishlist, Orders, Payments.
+
+```bash
+cd backend
+# Make sure venv is activated
+python test_full_flow.py
+```
+
+## 6. Stop the Servers
+To stop the backend or frontend server, simply press `Ctrl + C` in the respective terminal window.
+
+### Run Recommendation Logic Tests
+
+```bash
+cd backend
+python test_recommend.py
+```
+
+## 5. Database Seeding (Optional)
+To reset and populate the database with initial data:
+
+```bash
+# Ensure backend is running
+curl -X POST http://localhost:8000/seed -H "Content-Type: application/json" -d "{}"
+```
+Summary of Commands:
+- Start Backend :
+```
+cd backend
+python -m uvicorn main:app --reload 
+--port 8000
+```
+- Start Frontend :
+```
+npm run dev
+```
+- Run End-to-End Tests :
+```
+cd backend
+python test_full_flow.py
+```

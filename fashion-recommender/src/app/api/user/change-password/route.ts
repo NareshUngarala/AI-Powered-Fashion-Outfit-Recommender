@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import User from '@/models/User';
-import bcrypt from 'bcryptjs';
 
 export async function PUT(req: Request) {
   try {
@@ -13,36 +10,27 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { currentPassword, newPassword } = await req.json();
+    const body = await req.json();
 
-    if (!currentPassword || !newPassword) {
+    if (!body.currentPassword || !body.newPassword) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
-    await connectToDatabase();
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const user = await User.findById(userId);
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/change-password?userId=${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
 
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        return NextResponse.json({ message: errorData.detail || 'Failed to change password' }, { status: response.status });
     }
-
-    // Check if user has a password (might be OAuth user)
-    if (!user.password) {
-      return NextResponse.json({ message: 'Cannot change password for OAuth users' }, { status: 400 });
-    }
-
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-
-    if (!isMatch) {
-      return NextResponse.json({ message: 'Incorrect current password' }, { status: 400 });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-    user.password = hashedPassword;
-    await user.save();
 
     return NextResponse.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {

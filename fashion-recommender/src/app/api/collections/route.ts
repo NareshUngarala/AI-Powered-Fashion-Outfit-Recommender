@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import Collection from '@/models/Collection';
 
 export async function GET() {
   try {
-    await connectToDatabase();
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/collections`);
     
-    const collections = await Collection.find({}).sort({ featured: -1, name: 1 });
+    if (!response.ok) {
+        throw new Error(`Python backend error: ${response.statusText}`);
+    }
 
-    return NextResponse.json({ success: true, data: collections }, { status: 200 });
+    const collections = await response.json();
+    return NextResponse.json({ success: true, data: collections });
   } catch (error: unknown) {
     console.error('Error fetching collections:', error);
     return NextResponse.json(

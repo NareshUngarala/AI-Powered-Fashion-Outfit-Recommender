@@ -1,5 +1,3 @@
-import connectToDatabase from '@/lib/mongodb';
-import Product from '@/models/Product';
 import Navbar from '@/components/Navbar';
 import ProductDetailClient from '@/components/ProductDetailClient';
 import { notFound } from 'next/navigation';
@@ -20,15 +18,13 @@ async function getProduct(id: string) {
   }
 
   try {
-    await connectToDatabase();
-    // Validate ID format if necessary, or let findById fail/return null
-    const product = await Product.findById(id).lean();
-    if (!product) return null;
-    return {
-      ...product,
-      _id: product._id.toString(),
-      createdAt: product.createdAt?.toString(),
-    };
+    const res = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/products/${id}`, {
+        cache: 'no-store'
+    });
+    
+    if (!res.ok) return null;
+    
+    return await res.json();
   } catch {
     return null;
   }
