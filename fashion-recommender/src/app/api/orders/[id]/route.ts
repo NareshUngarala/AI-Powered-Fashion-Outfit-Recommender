@@ -17,7 +17,7 @@ export async function GET(
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`http://localhost:8000/orders/${id}?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/orders/${id}?userId=${userId}`, {
         cache: 'no-store'
     });
 

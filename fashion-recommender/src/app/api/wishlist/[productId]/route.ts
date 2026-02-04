@@ -17,7 +17,7 @@ export async function DELETE(
     const userId = session.user.id;
     const { productId } = await params;
 
-    const response = await fetch(`http://localhost:8000/wishlist/${userId}/remove/${productId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/wishlist/${userId}/remove/${productId}`, {
         method: 'DELETE',
     });
 
