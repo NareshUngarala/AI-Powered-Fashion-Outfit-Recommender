@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import Outfit from '@/models/Outfit';
 
 export async function DELETE(
   req: Request,
@@ -17,15 +15,19 @@ export async function DELETE(
 
     const { id } = await params;
 
-    await connectToDatabase();
-    
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
+    
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/outfits/${id}?userId=${userId}`, {
+        method: 'DELETE',
+    });
 
-    const deleted = await Outfit.findOneAndDelete({ _id: id, userId });
-
-    if (!deleted) {
+    if (response.status === 404) {
       return NextResponse.json({ message: 'Outfit not found' }, { status: 404 });
+    }
+    
+    if (!response.ok) {
+        throw new Error(`Python backend error: ${response.statusText}`);
     }
 
     return NextResponse.json({ success: true, message: 'Outfit deleted' });

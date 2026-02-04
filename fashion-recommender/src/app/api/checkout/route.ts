@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import Order from '@/models/Order';
-import Cart from '@/models/Cart';
 
 export async function POST(req: Request) {
   try {
@@ -13,8 +10,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-    
     const body = await req.json();
     const { items, total, shippingAddress } = body;
     // @ts-expect-error: Session user type gap
@@ -27,21 +22,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Create Order record in DB
-    const orderId = `#ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
-    
-    const newOrder = await Order.create({
-      userId,
-      orderId,
-      items,
-      total,
-      shippingAddress,
-      status: 'Processing', // Default status
-      paymentMethod: 'Credit Card (Mock)'
+    const response = await fetch(`http://localhost:8000/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            userId,
+            items,
+            total,
+            shippingAddress
+        }),
     });
 
-    // 2. Clear user's cart
-    await Cart.findOneAndUpdate({ userId }, { $set: { items: [] } });
+    if (!response.ok) throw new Error('Backend error');
+    const newOrder = await response.json();
 
     return NextResponse.json({
       success: true,

@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import User from '@/models/User';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -16,17 +13,23 @@ export async function GET() {
       );
     }
 
-    await connectToDatabase();
-
     // @ts-expect-error: Session user type gap
-    const user = await User.findById(session.user.id).select('-password');
+    const userId = session.user.id;
 
-    if (!user) {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/profile/${userId}`);
+    
+    if (response.status === 404) {
       return NextResponse.json(
         { message: 'User not found' },
         { status: 404 }
       );
     }
+
+    if (!response.ok) {
+        throw new Error(`Python backend error: ${response.statusText}`);
+    }
+
+    const user = await response.json();
 
     return NextResponse.json({
       success: true,
@@ -52,27 +55,30 @@ export async function PUT(req: Request) {
       );
     }
 
-    const { name, image, gender, preferredStyle } = await req.json();
+    const body = await req.json();
+    // @ts-expect-error: Session user type gap
+    const userId = session.user.id;
 
-    await connectToDatabase();
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/profile/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
 
-    const updatedUser = await User.findByIdAndUpdate(
-      // @ts-expect-error: Session user type gap
-      session.user.id,
-      { name, image, gender, preferredStyle },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!updatedUser) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      );
+    if (response.status === 400) {
+        return NextResponse.json({ message: 'No fields to update' }, { status: 400 });
     }
+
+    if (!response.ok) {
+        throw new Error(`Python backend error: ${response.statusText}`);
+    }
+
+    const updatedUser = await response.json();
 
     return NextResponse.json({
       success: true,
-      message: 'Profile updated successfully',
       data: updatedUser,
     });
   } catch (error) {

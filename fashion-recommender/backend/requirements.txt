@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+google-generativeai
+python-dotenv
+pydantic[email]
+requests
+motor
+dnspython
+bcrypt
+python-multipart
+python-jose[cryptography]

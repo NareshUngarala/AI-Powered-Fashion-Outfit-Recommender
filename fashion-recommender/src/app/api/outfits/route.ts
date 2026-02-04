@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import Outfit from '@/models/Outfit';
 
 export async function GET() {
   try {
@@ -12,13 +10,16 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-    
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
+    
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/outfits?userId=${userId}`);
 
-    const outfits = await Outfit.find({ userId }).sort({ createdAt: -1 });
+    if (!response.ok) {
+        throw new Error(`Python backend error: ${response.statusText}`);
+    }
 
+    const outfits = await response.json();
     return NextResponse.json({ success: true, data: outfits });
   } catch (error) {
     console.error('Outfits GET error:', error);
@@ -34,26 +35,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, mainProductId, items, styleAdvice } = await req.json();
+    const body = await req.json();
 
-    if (!mainProductId || !items || !Array.isArray(items)) {
+    if (!body.mainProductId || !body.items || !Array.isArray(body.items)) {
       return NextResponse.json({ message: 'Invalid data' }, { status: 400 });
     }
 
-    await connectToDatabase();
-    
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const newOutfit = await Outfit.create({
-      userId,
-      name: name || 'My AI Outfit',
-      mainProductId,
-      items,
-      styleAdvice
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/outfits?userId=${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
     });
 
-    return NextResponse.json({ success: true, message: 'Outfit saved', data: newOutfit });
+    if (!response.ok) {
+        throw new Error(`Python backend error: ${response.statusText}`);
+    }
+
+    const newOutfit = await response.json();
+    return NextResponse.json({ success: true, data: newOutfit });
   } catch (error) {
     console.error('Outfits POST error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

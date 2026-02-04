@@ -1,27 +1,32 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import Product from '@/models/Product';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectToDatabase();
-    
     const { id } = await params;
-    const product = await Product.findById(id);
+    
+    const response = await fetch(`http://localhost:8000/products/${id}`, {
+      cache: 'no-store'
+    });
 
-    if (!product) {
+    if (response.status === 404) {
       return NextResponse.json(
         { success: false, message: 'Product not found' },
         { status: 404 }
       );
     }
 
+    if (!response.ok) {
+      throw new Error(`Python backend error: ${response.statusText}`);
+    }
+
+    const product = await response.json();
+
     return NextResponse.json({ success: true, data: product }, { status: 200 });
   } catch (error: unknown) {
-    console.error('Error fetching product:', error);
+    console.error('Error fetching product from Python backend:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to fetch product', error: (error as Error).message },
       { status: 500 }

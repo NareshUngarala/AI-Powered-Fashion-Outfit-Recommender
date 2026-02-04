@@ -6,10 +6,12 @@ import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { ShoppingBag, User as UserIcon, Heart, Search, Menu, X } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 
 export default function Navbar() {
   const { data: session } = useSession();
-  const { cartCount } = useCart();
+  const { cartCount, setIsCartOpen } = useCart();
+  const { wishlistCount, setIsWishlistOpen } = useWishlist();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -68,18 +70,29 @@ export default function Navbar() {
                />
             </div>
 
-            <button className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button 
+              className="relative text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={() => setIsWishlistOpen(true)}
+            >
               <Heart className="h-5 w-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
             </button>
 
-            <Link href="/cart" className="relative text-gray-400 hover:text-gray-600 transition-colors">
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative text-gray-400 hover:text-gray-600 transition-colors"
+            >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
             
             {session ? (
                 <div className="relative group">

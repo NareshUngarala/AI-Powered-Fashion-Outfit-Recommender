@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/mongodb';
-import Order from '@/models/Order';
 
 export async function GET(
   req: Request,
@@ -15,23 +13,19 @@ export async function GET(
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-    
     const { id } = await params;
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    // Find order by ID (can be _id or orderId) and ensure it belongs to the user
-    const order = await Order.findOne({
-      $and: [
-        { $or: [{ _id: id }, { orderId: id }] },
-        { userId: userId }
-      ]
+    const response = await fetch(`http://localhost:8000/orders/${id}?userId=${userId}`, {
+        cache: 'no-store'
     });
 
-    if (!order) {
-      return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+    if (!response.ok) {
+        if (response.status === 404) return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+        throw new Error('Backend error');
     }
+    const order = await response.json();
 
     return NextResponse.json({ success: true, data: order });
   } catch (error) {

@@ -24,6 +24,8 @@ interface CartContextType {
   cartTotal: number;
   cartCount: number;
   isLoading: boolean;
+  isCartOpen: boolean;
+  setIsCartOpen: (isOpen: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -33,6 +35,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Generate deterministic cartId
   const getCartId = (item: { id: string, size?: string, color?: string }) => {
@@ -193,7 +196,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartCount = items.reduce((count, item) => count + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isLoading }}>
+    <CartContext.Provider value={{
+      items,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      cartTotal,
+      cartCount,
+      isLoading,
+      isCartOpen,
+      setIsCartOpen
+    }}>
       {children}
     </CartContext.Provider>
   );

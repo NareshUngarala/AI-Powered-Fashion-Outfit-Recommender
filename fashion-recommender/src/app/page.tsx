@@ -4,8 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import TrendingSection from '@/components/TrendingSection';
-import connectToDatabase from '@/lib/mongodb';
-import Collection from '@/models/Collection';
 
 interface ICollection {
   _id: string;
@@ -18,9 +16,15 @@ interface ICollection {
 
 async function getCollections() {
   try {
-    await connectToDatabase();
-    const collections = await Collection.find({ featured: true }).limit(4).lean();
-    return JSON.parse(JSON.stringify(collections));
+    const res = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/collections?featured=true`, {
+      cache: 'no-store' 
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to fetch collections');
+    }
+    
+    return await res.json();
   } catch (error) {
     console.error('Failed to fetch collections', error);
     return [];

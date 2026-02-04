@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import User from '@/models/User';
-import { hash } from 'bcryptjs';
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const body = await req.json();
+    const { name, email, password } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -14,30 +12,23 @@ export async function POST(req: Request) {
       );
     }
 
-    await connectToDatabase();
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, message: 'User already exists' },
-        { status: 400 }
-      );
-    }
-
-    const hashedPassword = await hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      image: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+    const response = await fetch(`http://localhost:8000/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userWithoutPassword } = user.toObject();
+    if (!response.ok) {
+        if (response.status === 400) {
+             return NextResponse.json({ success: false, message: 'User already exists' }, { status: 400 });
+        }
+        throw new Error(`Backend error: ${response.statusText}`);
+    }
+
+    const user = await response.json();
 
     return NextResponse.json(
-      { success: true, message: 'User created successfully', data: userWithoutPassword },
+      { success: true, message: 'User created successfully', data: user },
       { status: 201 }
     );
   } catch (error: unknown) {
