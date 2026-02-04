@@ -15,7 +15,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-            const backendUrl = process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
+            const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
             const response = await fetch(`${backendUrl}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

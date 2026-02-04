@@ -17,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized: User ID missing' }, { status: 401 });
     }
     
-    const response = await fetch(`http://localhost:8000/wishlist/${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/wishlist/${userId}`, {
         cache: 'no-store'
     });
     
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Unauthorized: User ID missing' }, { status: 401 });
     }
 
-    const response = await fetch(`http://localhost:8000/wishlist/${userId}/add`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/wishlist/${userId}/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }), // Note: Python expects Body(..., embed=True) which usually means { "productId": "..." }

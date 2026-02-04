@@ -7,7 +7,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    const response = await fetch(`http://localhost:8000/products/${id}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/products/${id}`, {
       cache: 'no-store'
     });
 
