@@ -191,7 +191,7 @@ def test_full_flow():
     print("   Success!")
     
     # Verify deletion
-    response = requests.get(f"{BASE_URL}/user/profile", params={"userId": user_id})
+    response = requests.get(f"{BASE_URL}/user/profile/{user_id}")
     assert response.status_code == 404
     print("   Verified deletion.")
 

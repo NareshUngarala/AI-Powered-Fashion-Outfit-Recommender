@@ -30,6 +30,12 @@ export const authOptions: NextAuthOptions = {
             }
 
             const user = await response.json();
+            
+            // Map _id to id for NextAuth compatibility
+            if (user && user._id && !user.id) {
+                user.id = user._id;
+            }
+            
             return user;
         } catch (error) {
             console.error("Auth error:", error);

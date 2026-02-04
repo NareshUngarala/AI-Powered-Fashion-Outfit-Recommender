@@ -15,7 +15,16 @@ export async function GET() {
 
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
+    
+    if (!userId || userId === 'undefined') {
+      console.error('Profile fetch failed: User ID is missing or invalid', { userId });
+      return NextResponse.json(
+        { message: 'Unauthorized: User ID missing' },
+        { status: 401 }
+      );
+    }
 
+    console.log(`Fetching profile for userId: ${userId}`);
     const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/profile/${userId}`);
     
     if (response.status === 404) {

@@ -15,7 +15,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { Product } from '@/data/products';
-import { OutfitRecommendation } from '@/lib/ai-stylist';
+
+// Interface for Outfit Item used in the modal
+interface OutfitItem {
+  id: string;
+  name: string;
+  category: string;
+  color: string;
+  price: number;
+  image: string;
+}
+
+// Interface for the Recommendation object expected by the frontend
+export interface OutfitRecommendation {
+  items: OutfitItem[];
+  styleAdvice: string;
+}
 
 // Extend Product interface if needed for frontend specific props not in data file
 interface ProductDetail extends Product {
@@ -41,7 +56,21 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product })
       });
-      const data = await response.json();
+      const rawData = await response.json();
+      
+      // Transform Python backend response to frontend format
+      const data: OutfitRecommendation = {
+          items: (rawData.items || []).map((item: any) => ({
+              id: item._id || item.id,
+              name: item.name,
+              category: item.category,
+              color: item.colors?.[0] || 'Standard',
+              price: item.price,
+              image: item.imageUrl || item.image
+          })),
+          styleAdvice: rawData.style_tips ? rawData.style_tips.join(' ') : (rawData.description || '')
+      };
+      
       setOutfitData(data);
     } catch (error) {
       console.error('Failed to fetch recommendation:', error);
@@ -58,7 +87,21 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product, occasion, gender })
       });
-      const data = await response.json();
+      const rawData = await response.json();
+      
+      // Transform Python backend response to frontend format
+      const data: OutfitRecommendation = {
+          items: (rawData.items || []).map((item: any) => ({
+              id: item._id || item.id,
+              name: item.name,
+              category: item.category,
+              color: item.colors?.[0] || 'Standard',
+              price: item.price,
+              image: item.imageUrl || item.image
+          })),
+          styleAdvice: rawData.style_tips ? rawData.style_tips.join(' ') : (rawData.description || '')
+      };
+      
       setOutfitData(data);
     } catch (error) {
       console.error('Failed to regenerate recommendation:', error);

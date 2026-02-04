@@ -13,6 +13,10 @@ export async function GET() {
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     
+    if (!userId) {
+      return NextResponse.json({ message: 'Unauthorized: User ID missing' }, { status: 401 });
+    }
+    
     const response = await fetch(`http://localhost:8000/wishlist/${userId}`, {
         cache: 'no-store'
     });
@@ -42,6 +46,10 @@ export async function POST(req: Request) {
 
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
+
+    if (!userId) {
+      return NextResponse.json({ message: 'Unauthorized: User ID missing' }, { status: 401 });
+    }
 
     const response = await fetch(`http://localhost:8000/wishlist/${userId}/add`, {
         method: 'POST',
