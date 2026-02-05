@@ -16,7 +16,6 @@ export const authOptions: NextAuthOptions = {
 
         try {
             const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-            console.log(`[NextAuth] Attempting login at: ${backendUrl}/auth/login`);
             const response = await fetch(`${backendUrl}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -27,8 +26,6 @@ export const authOptions: NextAuthOptions = {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`[NextAuth] Login failed: ${response.status} ${response.statusText} - ${errorText}`);
                 return null;
             }
 

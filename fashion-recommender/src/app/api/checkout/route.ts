@@ -22,10 +22,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-    console.log(`Processing checkout for user ${userId} at: ${backendUrl}/checkout`);
-
-    const response = await fetch(`${backendUrl}/checkout`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

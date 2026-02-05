@@ -6,10 +6,7 @@ export async function GET(request: NextRequest) {
     // Forward the query string directly to Python backend
     const queryString = searchParams.toString();
     
-    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-    console.log(`Fetching products from: ${backendUrl}/products?${queryString}`);
-
-    const response = await fetch(`${backendUrl}/products?${queryString}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/products?${queryString}`, {
       cache: 'no-store'
     });
 

@@ -12,10 +12,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-    console.log(`Attempting to sign up user at: ${backendUrl}/auth/signup`);
-
-    const response = await fetch(`${backendUrl}/auth/signup`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),

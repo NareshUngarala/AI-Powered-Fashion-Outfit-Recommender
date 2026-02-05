@@ -13,10 +13,7 @@ export async function GET() {
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     
-    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-    console.log(`Fetching outfits for user ${userId} from: ${backendUrl}/outfits`);
-
-    const response = await fetch(`${backendUrl}/outfits?userId=${userId}`);
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/outfits?userId=${userId}`);
 
     if (!response.ok) {
         throw new Error(`Python backend error: ${response.statusText}`);
@@ -47,10 +44,7 @@ export async function POST(req: Request) {
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-    console.log(`Creating outfit for user ${userId} at: ${backendUrl}/outfits`);
-
-    const response = await fetch(`${backendUrl}/outfits?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/outfits?userId=${userId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
