@@ -19,7 +19,8 @@ load_dotenv()
 import os
 print(f"MONGODB_URI: {os.getenv('MONGODB_URI')}")
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from bson import ObjectId
 import bcrypt
 
@@ -46,10 +47,11 @@ def get_password_hash(password):
 
 # Configure Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+client = None
 if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY is not set.")
 else:
-    genai.configure(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
 # --- Helper Functions ---
 
@@ -531,11 +533,20 @@ async def recommend_outfit(request: RecommendRequest):
         Do not include any markdown formatting or explanations outside the JSON.
         """
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        
-        text = response.text.replace("```json", "").replace("```", "").strip()
-        result = json.loads(text)
+        if client:
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
+            text = response.text.replace("```json", "").replace("```", "").strip()
+            result = json.loads(text)
+        else:
+             # Mock AI response if key is missing (fallback)
+             logger.warning("Gemini client not initialized. Using random selection.")
+             result = {
+                 "selected_ids": [str(c["_id"]) for c in random.sample(candidate_docs, min(3, len(candidate_docs)))],
+                 "style_tips": ["This is a randomly generated suggestion as API key is missing."]
+             }
         
         selected_ids = result.get("selected_ids", [])
         style_tips = result.get("style_tips", ["Great look!"])
