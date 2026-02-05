@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Optional
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Body, Query, Depends, status
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, BeforeValidator
 from dotenv import load_dotenv
 
@@ -38,15 +37,6 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI
 app = FastAPI(title="Fashion Recommender AI API")
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-)
 
 # Security
 def verify_password(plain_password, hashed_password):

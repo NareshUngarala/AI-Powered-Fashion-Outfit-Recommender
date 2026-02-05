@@ -68,10 +68,7 @@ export async function PUT(req: Request) {
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
-    console.log(`Updating profile for userId: ${userId} at: ${backendUrl}/user/profile/${userId}`);
-
-    const response = await fetch(`${backendUrl}/user/profile/${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/profile/${userId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
