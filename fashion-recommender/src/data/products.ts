@@ -15,6 +15,7 @@ export interface Product {
   productUrl?: string;
   stock?: number;
   tags?: string[];
+  colors?: string[];
 }
 
 export const PRODUCTS: Product[] = [

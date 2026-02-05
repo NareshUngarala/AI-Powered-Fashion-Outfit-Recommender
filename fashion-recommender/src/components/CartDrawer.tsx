@@ -28,6 +28,7 @@ export default function CartDrawer() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 
@@ -95,7 +96,7 @@ export default function CartDrawer() {
                 </div>
                 <div>
                   <p className="text-lg font-bold text-gray-900">Your cart is empty</p>
-                  <p className="text-sm text-gray-500 mt-1">Looks like you haven't added anything yet.</p>
+                  <p className="text-sm text-gray-500 mt-1">Looks like you haven&apos;t added anything yet.</p>
                 </div>
                 <button 
                   onClick={() => setIsCartOpen(false)}

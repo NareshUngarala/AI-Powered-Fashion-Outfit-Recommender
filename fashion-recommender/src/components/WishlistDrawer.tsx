@@ -6,10 +6,9 @@ import Link from 'next/link';
 import { 
   Heart, 
   X, 
-  ShoppingBag,
-  ArrowRight
+  ShoppingBag
 } from 'lucide-react';
-import { useWishlist } from '@/context/WishlistContext';
+import { useWishlist, WishlistItem } from '@/context/WishlistContext';
 import { useCart } from '@/context/CartContext';
 
 export default function WishlistDrawer() {
@@ -26,6 +25,7 @@ export default function WishlistDrawer() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 
@@ -43,7 +43,7 @@ export default function WishlistDrawer() {
 
   if (!mounted) return null;
 
-  const handleMoveToCart = async (item: any) => {
+  const handleMoveToCart = async (item: WishlistItem) => {
     await addToCart({
       id: item._id,
       name: item.name,
