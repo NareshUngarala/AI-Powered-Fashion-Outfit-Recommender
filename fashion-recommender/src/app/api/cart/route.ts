@@ -20,7 +20,10 @@ export async function GET(_req: Request) {
   }
 
   try {
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/cart/${userId}`, {
+    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+    console.log(`Fetching cart for user ${userId} from: ${backendUrl}/cart/${userId}`);
+
+    const response = await fetch(`${backendUrl}/cart/${userId}`, {
         cache: 'no-store'
     });
 
@@ -43,7 +46,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/cart/${userId}/add`, {
+    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+    console.log(`Adding to cart for user ${userId} at: ${backendUrl}/cart/${userId}/add`);
+
+    const response = await fetch(`${backendUrl}/cart/${userId}/add`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

@@ -11,7 +11,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Product data is required' }, { status: 400 });
     }
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/recommend`, {
+    const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+    console.log(`Generating recommendation via: ${backendUrl}/recommend`);
+
+    const response = await fetch(`${backendUrl}/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product, occasion, gender }),
