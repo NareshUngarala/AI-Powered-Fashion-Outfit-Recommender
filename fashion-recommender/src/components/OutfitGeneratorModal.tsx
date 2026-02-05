@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Sparkles, ShoppingBag, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Sparkles, ShoppingBag, Plus, Minus } from 'lucide-react';
 import Image from 'next/image';
 import { twMerge } from 'tailwind-merge';
+import { useCart } from '@/context/CartContext';
 
 interface OutfitItem {
   id: string;
@@ -29,6 +30,14 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
   const [activeTab, setActiveTab] = useState<'Casual' | 'Office' | 'Evening'>('Casual');
   const [activeGender, setActiveGender] = useState<'Men' | 'Women' | 'Unisex'>('Unisex');
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const { addToCart, items: cartItems, updateQuantity, removeFromCart } = useCart();
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsAddedToCart(false);
+    }
+  }, [isOpen, recommendation]);
 
   if (!isOpen) return null;
 
@@ -42,6 +51,11 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
     onRegenerate?.(activeTab, gender);
   };
 
+  const handleAddToCart = () => {
+    setIsAddedToCart(true);
+    // In a real app, this would call addToCart context
+  };
+
   // Use recommendation items if available, otherwise fallback to empty or static
   const items: OutfitItem[] = recommendation?.items || [];
   const styleAdvice = recommendation?.styleAdvice || "Select a style to generate an outfit.";
@@ -50,6 +64,33 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
   const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
   const discount = totalPrice * 0.10;
   const discountedPrice = totalPrice - discount;
+
+  const getCartItem = (itemId: string, itemColor: string) => {
+    return cartItems.find(item => item.id === itemId && item.size === 'M' && item.color === itemColor);
+  };
+
+  const handleUpdateCart = async (item: OutfitItem, change: number) => {
+      const cartItem = cartItems.find(i => i.id === item.id && i.size === 'M' && i.color === item.color);
+      
+      if (cartItem) {
+          const newQuantity = cartItem.quantity + change;
+          if (newQuantity > 0) {
+              await updateQuantity(cartItem.cartId, newQuantity);
+          } else {
+              await removeFromCart(cartItem.cartId);
+          }
+      } else if (change > 0) {
+          await addToCart({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              image: item.image,
+              size: 'M',
+              color: item.color,
+              brand: 'Fashion Brand'
+          });
+      }
+  };
 
   // Full body generated image placeholder
   const generatedLookImage = "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&q=80&w=600"; 
@@ -98,22 +139,25 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10 relative">
           <div className="flex-1 flex justify-center">
              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-green-600" />
-                <h2 className="text-lg font-bold text-gray-900">Your AI-Generated Look</h2>
+                <Sparkles className="w-5 h-5 text-green-600" />
+                <h2 className="text-xl font-bold text-gray-900">Your AI-Generated Look</h2>
              </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -125,96 +169,69 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
           </div>
         ) : (
           <>
-            {/* Tabs & Gender */}
-            <div className="flex flex-col gap-1 items-center justify-center py-3 bg-white border-b border-gray-50">
-              {/* Occasion */}
-              <div className="flex p-1 bg-gray-100 rounded-full scale-90">
-                {(['Casual', 'Office', 'Evening'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => handleTabChange(tab)}
-                    className={twMerge(
-                      "px-4 py-1 rounded-full text-xs font-medium transition-all",
-                      activeTab === tab 
-                        ? "bg-white text-gray-900 shadow-sm" 
-                        : "text-gray-500 hover:text-gray-700"
-                    )}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              {/* Gender */}
-              <div className="flex items-center gap-2">
-                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">For:</span>
-                 <div className="flex p-0.5 bg-gray-100 rounded-full scale-90">
-                    {(['Men', 'Women', 'Unisex'] as const).map((g) => (
-                      <button
-                        key={g}
-                        onClick={() => handleGenderChange(g)}
-                        className={twMerge(
-                          "px-3 py-0.5 rounded-full text-[10px] font-medium transition-all",
-                          activeGender === g 
-                            ? "bg-white text-gray-900 shadow-sm" 
-                            : "text-gray-500 hover:text-gray-700"
-                        )}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                 </div>
-              </div>
-            </div>
-
             {/* Body */}
             <div className="flex-1 overflow-hidden">
               <div className="flex flex-col lg:flex-row h-full">
                 
-                {/* Left Column: Generated Image */}
-                <div className="hidden lg:block w-[40%] bg-gray-50 p-4">
-                  <div className="relative w-full h-full rounded-xl overflow-hidden shadow-sm">
+                {/* Left Column: Main Product Image */}
+                <div className="hidden lg:block w-[45%] bg-gray-50 p-6">
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-sm">
                     <Image 
-                      src={generatedLookImage} 
-                      alt="AI Generated Look" 
+                      src={product?.imageUrl || product?.image} 
+                      alt={product?.name || "Product"} 
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg flex items-center justify-between text-[10px] border border-white/50 shadow-sm z-10">
-                      <span className="font-medium text-gray-600">AI-Generated</span>
-                      <span className="text-gray-400">#FA-2940</span>
+                    <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl flex items-center justify-between text-xs border border-white/50 shadow-sm z-10">
+                      <span className="font-bold text-gray-700">Main Product</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right Column: Individual Pieces */}
-                <div className="w-full lg:w-[60%] p-4 lg:p-5 flex flex-col h-full">
-                  <div className="bg-green-50 p-3 rounded-xl mb-4 border border-green-100">
-                     <div className="flex items-start gap-2">
-                        <Sparkles className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-gray-700 italic">{styleAdvice}</p>
-                     </div>
-                  </div>
-
-                  <h3 className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-3">Individual Pieces</h3>
+                <div className="w-full lg:w-[55%] p-6 lg:p-8 flex flex-col h-full">
                   
-                  <div className="space-y-2 flex-1 overflow-y-auto pr-1">
+                  <div className="space-y-3 flex-1 overflow-y-auto pr-2">
                     {items.length > 0 ? (
                       items.map((item, idx) => (
-                        <div key={item.id || idx} className="flex items-center gap-3 p-2 border border-gray-100 rounded-xl hover:border-green-100 hover:shadow-sm transition-all group bg-white">
-                          <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        <div key={item.id || idx} className="flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:border-green-100 hover:shadow-md transition-all group bg-white">
+                          <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
                             {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" />}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 text-xs truncate">{item.name}</h4>
-                            <p className="text-[10px] text-gray-500 mt-0.5">
-                              {item.category} • <span className="text-gray-700">{item.color}</span>
+                          <div className="flex-1 min-w-0 py-1">
+                            <h4 className="font-bold text-gray-900 text-sm truncate">{item.name}</h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {item.category} • <span className="text-gray-700 font-medium">{item.color}</span>
                             </p>
-                            <p className="font-bold text-gray-900 text-xs mt-0.5">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
+                            <p className="font-bold text-green-700 text-sm mt-1">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
                           </div>
-                          <button className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all">
-                            <Plus className="w-3 h-3" />
-                          </button>
+                          {(() => {
+                              const cartItem = getCartItem(item.id, item.color);
+                              return cartItem ? (
+                                  <div className="flex items-center gap-3 bg-green-50 rounded-full px-2 py-1 border border-green-100">
+                                      <button 
+                                          onClick={() => handleUpdateCart(item, -1)}
+                                          className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-green-600 shadow-sm hover:text-green-700 hover:shadow transition-all"
+                                      >
+                                          <Minus className="w-4 h-4" />
+                                      </button>
+                                      <span className="text-sm font-bold text-green-700 w-4 text-center">{cartItem.quantity}</span>
+                                      <button 
+                                          onClick={() => handleUpdateCart(item, 1)}
+                                          className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-white shadow-sm hover:bg-green-700 hover:shadow transition-all"
+                                      >
+                                          <Plus className="w-4 h-4" />
+                                      </button>
+                                  </div>
+                              ) : (
+                                  <button 
+                                      onClick={() => handleUpdateCart(item, 1)}
+                                      className="w-9 h-9 rounded-full bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm hover:shadow"
+                                  >
+                                      <Plus className="w-5 h-5" />
+                                  </button>
+                              );
+                          })()}
                         </div>
                       ))
                     ) : (
@@ -229,26 +246,18 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-3 border-t border-gray-100 bg-white flex items-center justify-between gap-4">
-              <div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold text-gray-900">₹{discountedPrice.toFixed(0)}</span>
-                  <span className="text-sm text-gray-400 line-through decoration-gray-300">₹{totalPrice.toFixed(0)}</span>
-                  <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">-10%</span>
-                </div>
-              </div>
+            <div className="px-5 py-3 border-t border-gray-100 bg-white flex items-center justify-end gap-4">
               
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-6 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-lg font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
+                  className="px-8 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
                 >
                   {isSaving ? 'Saving...' : 'Save Look'}
                 </button>
-                <button className="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-all transform active:scale-95">
-                  <ShoppingBag className="w-4 h-4" />
+                <button className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-all transform active:scale-95">
+                  <ShoppingBag className="w-5 h-5" />
                   Buy All
                 </button>
               </div>

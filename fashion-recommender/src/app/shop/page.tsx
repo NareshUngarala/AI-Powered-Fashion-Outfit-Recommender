@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import Link from 'next/link';
 import { 
   SlidersHorizontal, 
   Check,
@@ -29,9 +28,8 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
 
   // Filter States
-  const [selectedOccasion, setSelectedOccasion] = useState<string>('');
-  const [selectedVibe, setSelectedVibe] = useState<string>('');
-  const [selectedSustainability, setSelectedSustainability] = useState<string>('');
+  const [selectedStyle, setSelectedStyle] = useState<string>('');
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -42,16 +40,33 @@ export default function ShopPage() {
       setLoading(true);
       try {
         const params = new URLSearchParams();
-        const tags = [selectedOccasion, selectedVibe, selectedSustainability].filter(Boolean).join(',');
         
-        if (tags) params.append('tags', tags);
         if (selectedCategory && selectedCategory !== 'All') params.append('category', selectedCategory);
         
         const response = await fetch(`/api/products?${params.toString()}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            setProducts(data.data.length > 0 ? data.data : []); 
+            let fetchedProducts = data.data.length > 0 ? data.data : [];
+            
+            // Client-side filtering for Style
+            if (selectedStyle) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                fetchedProducts = fetchedProducts.filter((p: any) => p.style === selectedStyle);
+            }
+
+            // Client-side filtering for Price
+            if (selectedPriceRange) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                fetchedProducts = fetchedProducts.filter((p: any) => {
+                    if (selectedPriceRange === 'Under ₹1000') return p.price < 1000;
+                    if (selectedPriceRange === '₹1000 - ₹2500') return p.price >= 1000 && p.price <= 2500;
+                    if (selectedPriceRange === 'Above ₹2500') return p.price > 2500;
+                    return true;
+                });
+            }
+
+            setProducts(fetchedProducts); 
           }
         }
       } catch (error) {
@@ -59,7 +74,14 @@ export default function ShopPage() {
         // Fallback to local filtering if API fails
         const filtered = [...PRODUCTS].filter(p => {
             const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
-            return matchCategory;
+            const matchStyle = !selectedStyle || p.style === selectedStyle;
+            let matchPrice = true;
+            if (selectedPriceRange) {
+                if (selectedPriceRange === 'Under ₹1000') matchPrice = p.price < 1000;
+                else if (selectedPriceRange === '₹1000 - ₹2500') matchPrice = p.price >= 1000 && p.price <= 2500;
+                else if (selectedPriceRange === 'Above ₹2500') matchPrice = p.price > 2500;
+            }
+            return matchCategory && matchStyle && matchPrice;
         });
         setProducts(filtered);
       } finally {
@@ -73,7 +95,7 @@ export default function ShopPage() {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [selectedOccasion, selectedVibe, selectedSustainability, selectedCategory]);
+  }, [selectedStyle, selectedPriceRange, selectedCategory]);
 
   // AI Recommendation Logic for New York Weather (Cold/Winter)
   const recommendedProducts = PRODUCTS.filter(p => {
@@ -131,40 +153,37 @@ export default function ShopPage() {
             {/* AI Personalization Toggle */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">AI Personalization</h3>
-              <button 
-                onClick={() => setAiEnabled(!aiEnabled)}
-                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                  aiEnabled 
-                    ? 'bg-green-50 border-green-200 shadow-sm' 
-                    : 'bg-white border-gray-200'
-                }`}
-              >
-                <span className={`text-sm font-semibold ${aiEnabled ? 'text-green-800' : 'text-gray-600'}`}>
-                  Match Confidence
-                </span>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${aiEnabled ? 'bg-green-500' : 'bg-gray-300'}`}>
-                  <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow-sm transition-transform ${aiEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setAiEnabled(!aiEnabled)}>
+                <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ease-in-out ${
+                  aiEnabled ? 'bg-green-600' : 'bg-gray-300 group-hover:bg-gray-400'
+                }`}>
+                  <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow-sm transition-transform duration-300 ease-in-out ${
+                    aiEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
                 </div>
-              </button>
+                <span className={`text-sm ${aiEnabled ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                  Smart Recommendations
+                </span>
+              </label>
             </div>
 
-            {/* Occasion */}
+            {/* Style */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Occasion</h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Style</h3>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
               <div className="space-y-2">
-                {['Date Night', 'Sunday Brunch', 'Corporate Office'].map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleFilter(setSelectedOccasion, selectedOccasion, item)}>
+                {['Traditional Wear', 'Casual Wear', 'Formal Wear', 'Party Wear'].map((item) => (
+                  <label key={item} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleFilter(setSelectedStyle, selectedStyle, item)}>
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      selectedOccasion === item 
+                      selectedStyle === item 
                         ? 'bg-green-600 border-green-600' 
                         : 'bg-white border-gray-300 group-hover:border-green-400'
                     }`}>
-                      {selectedOccasion === item && <Check className="w-3.5 h-3.5 text-white" />}
+                      {selectedStyle === item && <Check className="w-3.5 h-3.5 text-white" />}
                     </div>
-                    <span className={`text-sm ${selectedOccasion === item ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                    <span className={`text-sm ${selectedStyle === item ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
                       {item}
                     </span>
                   </label>
@@ -172,41 +191,20 @@ export default function ShopPage() {
               </div>
             </div>
 
-            {/* Vibe */}
+            {/* Price Range */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vibe</h3>
-              <div className="flex flex-wrap gap-2">
-                {['Minimalist', 'Gen-Z', 'Vintage', 'Professional'].map((vibe) => (
-                  <button
-                    key={vibe}
-                    onClick={() => toggleFilter(setSelectedVibe, selectedVibe, vibe)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                      selectedVibe === vibe
-                        ? 'bg-green-600 text-white shadow-md shadow-green-200'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:border-green-200 hover:text-green-700'
-                    }`}
-                  >
-                    {vibe}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Sustainability */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sustainability</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Price Range</h3>
               <div className="space-y-2">
-                {['Recycled Materials', 'Carbon Neutral'].map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleFilter(setSelectedSustainability, selectedSustainability, item)}>
+                {['Under ₹1000', '₹1000 - ₹2500', 'Above ₹2500'].map((item) => (
+                  <label key={item} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleFilter(setSelectedPriceRange, selectedPriceRange, item)}>
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      selectedSustainability === item
+                      selectedPriceRange === item 
                         ? 'bg-green-600 border-green-600' 
                         : 'bg-white border-gray-300 group-hover:border-green-400'
                     }`}>
-                      {selectedSustainability === item && <Check className="w-3.5 h-3.5 text-white" />}
+                      {selectedPriceRange === item && <Check className="w-3.5 h-3.5 text-white" />}
                     </div>
-                    <span className="text-sm text-gray-600 flex items-center gap-2">
-                      {item === 'Recycled Materials' && <span className="text-green-600 text-[10px]">♻</span>}
+                    <span className={`text-sm ${selectedPriceRange === item ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
                       {item}
                     </span>
                   </label>
@@ -222,13 +220,12 @@ export default function ShopPage() {
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-1">
                 <div>
-                  {selectedOccasion && (
+                  {selectedStyle && (
                     <h1 className="text-3xl font-bold text-gray-900 mb-0">
-                        Recommended for {selectedOccasion}
+                        Filtered by {selectedStyle}
                     </h1>
                   )}
                 </div>
-{/* Removed Sort Button */}
               </div>
 
               {/* Category Buttons Scroll */}
@@ -297,7 +294,7 @@ export default function ShopPage() {
                   <>
                     {/* Combined Grid for Mobile/Tablet (to fix flow issues) */}
                     <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        {(recommendedProducts.length > 0 && !selectedOccasion && selectedCategory === 'All') && 
+                        {(aiEnabled && recommendedProducts.length > 0 && !selectedStyle && !selectedPriceRange && selectedCategory === 'All') && 
                             recommendedProducts.map((product) => (
                                 <ProductCard key={`rec-${product._id}`} product={product} />
                             ))
@@ -307,7 +304,7 @@ export default function ShopPage() {
                                 <ProductCard key={product._id} product={product} />
                             ))
                         ) : (
-                            !((recommendedProducts.length > 0 && !selectedOccasion && selectedCategory === 'All')) && (
+                            !((aiEnabled && recommendedProducts.length > 0 && !selectedStyle && !selectedPriceRange && selectedCategory === 'All')) && (
                                 <div className="col-span-full text-center py-12 text-gray-500">
                                     No products found matching your filters.
                                 </div>
@@ -317,7 +314,7 @@ export default function ShopPage() {
 
                     {/* Separate Grids for Desktop (to maintain specific column counts) */}
                     <div className="hidden lg:block">
-                        {recommendedProducts.length > 0 && !selectedOccasion && selectedCategory === 'All' && (
+                        {aiEnabled && recommendedProducts.length > 0 && !selectedStyle && !selectedPriceRange && selectedCategory === 'All' && (
                         <div className="mb-6">
                             <div className="grid grid-cols-4 gap-6">
                             {recommendedProducts.map((product) => (

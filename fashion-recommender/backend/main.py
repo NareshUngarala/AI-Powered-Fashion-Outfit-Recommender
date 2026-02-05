@@ -55,23 +55,28 @@ else:
 
 def map_category(category: str) -> str:
     category = category.lower()
-    if "shirt" in category or "top" in category or "t-shirt" in category or "blouse" in category:
-        return "Tops"
-    elif "pant" in category or "jeans" in category or "trousers" in category or "shorts" in category:
+    
+    # Full Body / Sets
+    if any(x in category for x in ["set", "suit", "sherwani", "pajama", "co-ords", "overall", "jumpsuit"]):
+        return "FullBody"
+        
+    # Bottoms
+    if any(x in category for x in ["jeans", "trouser", "pant", "chinos", "jogger", "short", "bottom", "skirt", "legging"]):
         return "Bottoms"
-    elif "dress" in category or "gown" in category or "frock" in category:
-        return "Dresses"
-    elif "jacket" in category or "coat" in category or "blazer" in category:
+        
+    # Outerwear
+    if any(x in category for x in ["jacket", "blazer", "coat", "bandhgala", "vest", "cardigan"]):
         return "Outerwear"
-    elif "shoe" in category or "boot" in category or "sandal" in category or "sneaker" in category:
+        
+    # Tops (check this last to avoid matching "Kurta Set" as Top if not caught by FullBody)
+    if any(x in category for x in ["shirt", "top", "tee", "t-shirt", "kurta", "tunic", "blouse"]):
+        return "Tops"
+        
+    # Shoes
+    if any(x in category for x in ["shoe", "sneaker", "boot", "sandal", "footwear", "heel", "flat"]):
         return "Shoes"
-    elif "bag" in category or "purse" in category:
-        return "Bags"
-    elif "accessory" in category or "jewelry" in category or "watch" in category:
-        return "Accessories"
-    elif "saree" in category or "kurta" in category or "lehenga" in category:
-        return "Indian Wear"
-    return "Tops" # Default
+        
+    return "Accessories"
 
 # --- Auth Endpoints ---
 
@@ -421,6 +426,7 @@ class RecommendRequest(BaseModel):
 class RecommendationResponse(BaseModel):
     items: List[ProductModel]
     explanation: str
+    style_tips: Optional[List[str]] = None
 
 @app.post("/recommend", response_model=RecommendationResponse)
 async def recommend_outfit(request: RecommendRequest):
@@ -430,21 +436,143 @@ async def recommend_outfit(request: RecommendRequest):
     
     category = map_category(product.get("category", ""))
     
-    recommendations = []
+    # 1. Identify candidate categories based on actual DB content
+    # DB Categories:
+    # Tops: "T-Shirt", "Formal Shirt", "shirt", "Kurta", "Short Kurta", "Kurta Shirt"
+    # Bottoms: "Jeans", "Chinos", "Joggers", "Formal Trousers"
+    # Outerwear: "Jacket", "Blazer", "Bandhgala", "Bandhgala Jacket"
+    # FullBody: "Sherwani", "Kurta Pajama", "Pathani Suit", "Dhoti Set", "Kurta Set", "Co-ords", "Suit", "Fusion Set", "Party Set"
     
-    # Find bottoms
+    db_tops = ["T-Shirt", "Formal Shirt", "shirt", "Kurta", "Short Kurta", "Kurta Shirt"]
+    db_bottoms = ["Jeans", "Chinos", "Joggers", "Formal Trousers"]
+    db_outerwear = ["Jacket", "Blazer", "Bandhgala", "Bandhgala Jacket"]
+    
+    complementary_categories = []
+    
     if category == "Tops":
-        bottoms = await product_collection.find({"category": {"$in": ["Bottoms", "Jeans", "Trousers", "Skirts"]}}).limit(3).to_list(3)
-        recommendations.extend(bottoms)
+        complementary_categories = db_bottoms + db_outerwear
     elif category == "Bottoms":
-        tops = await product_collection.find({"category": {"$in": ["Tops", "Shirts", "T-Shirts"]}}).limit(3).to_list(3)
-        recommendations.extend(tops)
-        
-    # Find shoes
-    shoes = await product_collection.find({"category": "Shoes"}).limit(2).to_list(2)
-    recommendations.extend(shoes)
+        complementary_categories = db_tops + db_outerwear
+    elif category == "Outerwear":
+        complementary_categories = db_tops + db_bottoms
+    elif category == "FullBody":
+        # For sets, we can suggest outerwear or specific tops (like shirts for suits)
+        complementary_categories = db_outerwear + ["Formal Shirt"]
+    else:
+        # Default fallback
+        complementary_categories = db_tops + db_bottoms
     
-    return {"items": recommendations, "explanation": "Matched based on style."}
+    # 2. Fetch candidates from DB
+    candidate_query = {"category": {"$in": complementary_categories}}
+    
+    # Filter by gender if possible (simple heuristic)
+    if gender != "Unisex":
+        # This assumes products have a 'gender' field or we rely on the user to filter. 
+        # For now, we'll just fetch broadly to ensure we have candidates.
+        pass
+
+    candidate_docs = await product_collection.find(candidate_query).limit(40).to_list(40)
+    
+    # If no candidates found, fallback to existing logic (which fetches specific categories)
+    if not candidate_docs:
+        # Fallback logic
+        recommendations = []
+        if category == "Tops":
+            bottoms = await product_collection.find({"category": {"$in": db_bottoms}}).limit(3).to_list(3)
+            recommendations.extend(bottoms)
+        elif category == "Bottoms":
+            tops = await product_collection.find({"category": {"$in": db_tops}}).limit(3).to_list(3)
+            recommendations.extend(tops)
+        elif category == "Outerwear":
+            inner = await product_collection.find({"category": {"$in": db_tops}}).limit(2).to_list(2)
+            recommendations.extend(inner)
+        else:
+             # Try to find anything
+            others = await product_collection.find({"category": {"$in": db_tops + db_bottoms}}).limit(3).to_list(3)
+            recommendations.extend(others)
+            
+        return {"items": recommendations, "explanation": "Matched based on simple category rules (fallback).", "style_tips": ["Try mixing textures!", "Balance loose and tight fits."]}
+
+    # 3. Use Gemini to select best outfit
+    try:
+        candidate_list_str = json.dumps([
+            {
+                "id": str(p["_id"]),
+                "name": p["name"],
+                "category": p["category"],
+                "color": p.get("colors", ["Unknown"])[0] if p.get("colors") else "Unknown",
+                "price": p.get("price", 0)
+            } 
+            for p in candidate_docs
+        ])
+        
+        main_product_str = json.dumps({
+            "name": product.get("name"),
+            "category": product.get("category"),
+            "color": product.get("colors", ["Unknown"])[0] if product.get("colors") else "Unknown",
+            "description": product.get("description", "")
+        })
+        
+        prompt = f"""
+        You are a professional fashion stylist.
+        I have a main product: {main_product_str}
+        
+        I have a list of candidate products:
+        {candidate_list_str}
+        
+        Please select 3-4 items from the candidate list that form a complete, stylish outfit with the main product for a '{occasion}' occasion for {gender}.
+        The outfit must be color-coordinated and appropriate for the occasion.
+        
+        Return ONLY a valid JSON object with this structure:
+        {{
+            "selected_ids": ["id1", "id2", "id3"],
+            "style_tips": ["Tip 1", "Tip 2", "Tip 3"]
+        }}
+        Do not include any markdown formatting or explanations outside the JSON.
+        """
+        
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        
+        text = response.text.replace("```json", "").replace("```", "").strip()
+        result = json.loads(text)
+        
+        selected_ids = result.get("selected_ids", [])
+        style_tips = result.get("style_tips", ["Great look!"])
+        
+        selected_products = [
+            p for p in candidate_docs if str(p["_id"]) in selected_ids
+        ]
+        
+        # Ensure we have at least 2 items
+        if len(selected_products) < 2:
+            raise Exception("AI selected too few items")
+            
+        return {
+            "items": selected_products, 
+            "explanation": " ".join(style_tips),
+            "style_tips": style_tips
+        }
+
+    except Exception as e:
+        logger.error(f"Gemini error: {e}")
+        # Fallback to simple logic if AI fails
+        recommendations = []
+        if category == "Tops":
+            bottoms = await product_collection.find({"category": {"$in": db_bottoms}}).limit(3).to_list(3)
+            recommendations.extend(bottoms)
+        elif category == "Bottoms":
+            tops = await product_collection.find({"category": {"$in": db_tops}}).limit(3).to_list(3)
+            recommendations.extend(tops)
+        elif category == "Outerwear":
+            inner = await product_collection.find({"category": {"$in": db_tops}}).limit(2).to_list(2)
+            recommendations.extend(inner)
+        else:
+             # Try to find anything
+            others = await product_collection.find({"category": {"$in": db_tops + db_bottoms}}).limit(3).to_list(3)
+            recommendations.extend(others)
+        
+        return {"items": recommendations, "explanation": "Matched based on style rules.", "style_tips": ["Classic combination."]}
 
 # --- Seed Endpoint ---
 
