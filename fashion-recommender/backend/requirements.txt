@@ -9,3 +9,6 @@ dnspython
 bcrypt
 python-multipart
 python-jose[cryptography]
+gradio_client
+Pillow
+httpx

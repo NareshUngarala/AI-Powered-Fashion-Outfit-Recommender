@@ -103,6 +103,23 @@ export default function ProfilePage() {
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper function to validate URLs
+  const isValidImageUrl = (url: string): boolean => {
+    if (!url || url.trim() === '') return false;
+    // Allow data URLs (base64 images from file upload)
+    if (url.startsWith('data:image/')) return true;
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const getValidImageUrl = (url: string, fallback: string): string => {
+    return isValidImageUrl(url) ? url : fallback;
+  };
+
   const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -371,10 +388,11 @@ export default function ProfilePage() {
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Image 
-                      src={editForm.image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
+                      src={getValidImageUrl(editForm.image, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200')}
                       alt="Preview"
                       fill
                       className="object-cover"
+                      unoptimized={isValidImageUrl(editForm.image) && !editForm.image.includes('unsplash.com')}
                     />
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                         <Camera className="w-5 h-5 text-white" />
@@ -464,10 +482,11 @@ export default function ProfilePage() {
                   <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 bg-white/20 backdrop-blur-sm">
                      <div className="w-full h-full rounded-full overflow-hidden border-2 md:border-4 border-white/90 relative bg-gray-200 shadow-xl">
                         <Image 
-                          src={profile.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"} 
+                          src={getValidImageUrl(profile.image || '', "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200")} 
                           alt={profile.name} 
                           fill 
                           className="object-cover"
+                          unoptimized={!!(profile.image && !profile.image.includes('unsplash.com'))}
                         />
                      </div>
                   </div>
@@ -667,10 +686,10 @@ export default function ProfilePage() {
       
                                <div className="flex items-center gap-4 pt-4 border-t border-gray-50">
                                   <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300">
-                                     {order.items.slice(0, 4).map((item, index) => (
+                                       {order.items.slice(0, 4).map((item, index) => (
                                         <div key={index} className="w-12 h-12 rounded-xl border-2 border-white relative overflow-hidden bg-gray-100 shadow-sm hover:scale-110 hover:z-10 transition-all">
                                            <Image 
-                                             src={item.image} 
+                                             src={item.image || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300"} 
                                              alt={item.name} 
                                              fill 
                                              className="object-cover"
@@ -777,7 +796,7 @@ export default function ProfilePage() {
                                <div key={product._id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all group relative">
                                   <div className="aspect-[4/5] relative bg-gray-100 overflow-hidden">
                                      <Image 
-                                       src={product.images[0]} 
+                                       src={product.images?.[0] || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300"} 
                                        alt={product.name} 
                                        fill 
                                        className="object-cover group-hover:scale-105 transition-transform duration-500"

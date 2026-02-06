@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Sparkles, ShoppingBag, Plus, Minus } from 'lucide-react';
+import { X, Sparkles, ShoppingBag, Plus, Minus, Check } from 'lucide-react';
 import Image from 'next/image';
 import { twMerge } from 'tailwind-merge';
 import { useCart } from '@/context/CartContext';
@@ -33,7 +33,17 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
   const [isGeneratingLook, setIsGeneratingLook] = useState(false);
   const [generatedLookUrl, setGeneratedLookUrl] = useState<string | null>(null);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const { addToCart, items: cartItems, updateQuantity, removeFromCart } = useCart();
+
+  // Initialize selected items when recommendation changes
+  useEffect(() => {
+    if (recommendation?.items) {
+      // Select all items by default
+      const allIds = new Set(recommendation.items.map((item: OutfitItem) => item.id));
+      setSelectedItemIds(allIds);
+    }
+  }, [recommendation]);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +51,28 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
       setGeneratedLookUrl(null);
     }
   }, [isOpen, recommendation]);
+
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItemIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllItems = () => {
+    if (recommendation?.items) {
+      setSelectedItemIds(new Set(recommendation.items.map((item: OutfitItem) => item.id)));
+    }
+  };
+
+  const deselectAllItems = () => {
+    setSelectedItemIds(new Set());
+  };
 
   if (!isOpen) return null;
 
@@ -55,6 +87,14 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
   };
 
   const handleGetLook = async () => {
+    // Only send selected items
+    const selectedItems = items.filter(item => selectedItemIds.has(item.id));
+    
+    if (selectedItems.length === 0) {
+      alert("Please select at least one item for the look");
+      return;
+    }
+    
     setIsGeneratingLook(true);
     try {
       const response = await fetch('/api/generate-look', {
@@ -62,7 +102,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mainProductId: product._id,
-          items: items
+          items: selectedItems
         })
       });
       
@@ -169,7 +209,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-7xl bg-white rounded-2xl shadow-2xl overflow-y-auto flex flex-col max-h-[95vh]">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10 relative">
@@ -200,21 +240,36 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
         ) : (
           <>
             {/* Body */}
-            <div className="flex-1 overflow-hidden">
-              <div className="flex flex-col lg:flex-row h-full">
+            <div className="flex-1 overflow-visible">
+              <div className="flex flex-col lg:flex-row min-h-full">
                 
                 {/* Left Column: Main Product Image or Generated Look */}
-                <div className={`w-full lg:w-[45%] bg-gray-50 p-6 ${generatedLookUrl ? 'block' : 'hidden lg:block'}`}>
-                  <div className="relative w-full h-[400px] lg:h-full rounded-2xl overflow-hidden shadow-sm group">
-                    <Image 
-                      src={generatedLookUrl || product?.imageUrl || product?.image} 
-                      alt={generatedLookUrl ? "AI Generated Look" : (product?.name || "Product")} 
-                      fill
-                      className="object-cover transition-transform duration-700 hover:scale-105"
-                    />
+                <div className={`w-full ${generatedLookUrl ? 'lg:w-[65%]' : 'lg:w-[45%]'} bg-gradient-to-br from-gray-100 to-gray-50 p-2 flex items-center justify-center ${generatedLookUrl ? 'block' : 'hidden lg:block'}`}>
+                  <div className={`relative w-full rounded-2xl overflow-visible shadow-lg group bg-white flex items-center justify-center ${generatedLookUrl ? 'h-auto' : 'h-[400px] lg:h-full'}`} style={generatedLookUrl ? { minHeight: '650px' } : {}}>
+                    {/* Use img tag for base64 images to ensure full display */}
+                    {generatedLookUrl ? (
+                      <img 
+                        src={generatedLookUrl} 
+                        alt="AI Generated Look - You wearing the outfit"
+                        className="w-auto h-auto object-contain rounded-xl"
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '85vh',
+                          display: 'block', 
+                          margin: 'auto' 
+                        }}
+                      />
+                    ) : (
+                      <Image 
+                        src={product?.imageUrl || product?.image} 
+                        alt={product?.name || "Product"} 
+                        fill
+                        className="object-cover transition-transform duration-700 hover:scale-105"
+                      />
+                    )}
                     
                     {/* Overlay Label */}
-                    <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl flex items-center justify-between text-xs border border-white/50 shadow-sm z-10">
+                    <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl flex items-center justify-between text-xs border border-gray-200 shadow-md z-10">
                       <div className="flex items-center gap-2">
                         {generatedLookUrl ? (
                             <Sparkles className="w-4 h-4 text-purple-600" />
@@ -222,7 +277,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                             <ShoppingBag className="w-4 h-4 text-gray-500" />
                         )}
                         <span className={`font-bold ${generatedLookUrl ? 'text-purple-700' : 'text-gray-700'}`}>
-                            {generatedLookUrl ? "AI Generated Look" : "Main Product"}
+                            {generatedLookUrl ? "Your Virtual Try-On Look" : "Main Product"}
                         </span>
                       </div>
                       
@@ -238,22 +293,63 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
 
                     {/* Badge for AI */}
                     {generatedLookUrl && (
-                        <div className="absolute top-4 right-4 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1 animate-in fade-in slide-in-from-top-2">
-                            <Sparkles className="w-3 h-3" />
-                            AI Stylist
+                        <div className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                            <Sparkles className="w-4 h-4" />
+                            AI Virtual Try-On
                         </div>
                     )}
                   </div>
                 </div>
 
                 {/* Right Column: Individual Pieces */}
-                <div className={`w-full lg:w-[55%] p-6 lg:p-8 flex flex-col h-full ${generatedLookUrl ? 'hidden lg:flex' : 'flex'}`}>
+                <div className={`w-full ${generatedLookUrl ? 'lg:w-[45%]' : 'lg:w-[55%]'} p-6 lg:p-8 flex flex-col h-full ${generatedLookUrl ? 'hidden lg:flex' : 'flex'}`}>
                   
+                  {/* Selection Controls */}
+                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-600">
+                      <span className="text-green-600 font-bold">{selectedItemIds.size}</span> of {items.length} items selected
+                    </p>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={selectAllItems}
+                        className="text-xs font-medium text-green-600 hover:text-green-700 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button 
+                        onClick={deselectAllItems}
+                        className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="space-y-3 flex-1 overflow-y-auto pr-2">
                     {items.length > 0 ? (
-                      items.map((item, idx) => (
-                        <div key={item.id || idx} className="flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:border-green-100 hover:shadow-md transition-all group bg-white">
-                          <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                      items.map((item, idx) => {
+                        const isSelected = selectedItemIds.has(item.id);
+                        return (
+                        <div 
+                          key={item.id || idx} 
+                          onClick={() => toggleItemSelection(item.id)}
+                          className={`flex items-center gap-4 p-3 border-2 rounded-xl transition-all group cursor-pointer ${
+                            isSelected 
+                              ? 'border-green-500 bg-green-50/50 shadow-md' 
+                              : 'border-gray-100 bg-white hover:border-gray-200'
+                          }`}
+                        >
+                          {/* Selection Checkbox */}
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                            isSelected 
+                              ? 'bg-green-500 text-white' 
+                              : 'border-2 border-gray-300 bg-white'
+                          }`}>
+                            {isSelected && <Check className="w-4 h-4" />}
+                          </div>
+
+                          <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
                             {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" />}
                           </div>
                           <div className="flex-1 min-w-0 py-1">
@@ -266,16 +362,16 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                           {(() => {
                               const cartItem = getCartItem(item.id, item.color);
                               return cartItem ? (
-                                  <div className="flex items-center gap-3 bg-green-50 rounded-full px-2 py-1 border border-green-100">
+                                  <div className="flex items-center gap-3 bg-green-50 rounded-full px-2 py-1 border border-green-100" onClick={(e) => e.stopPropagation()}>
                                       <button 
-                                          onClick={() => handleUpdateCart(item, -1)}
+                                          onClick={(e) => { e.stopPropagation(); handleUpdateCart(item, -1); }}
                                           className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-green-600 shadow-sm hover:text-green-700 hover:shadow transition-all"
                                       >
                                           <Minus className="w-4 h-4" />
                                       </button>
                                       <span className="text-sm font-bold text-green-700 w-4 text-center">{cartItem.quantity}</span>
                                       <button 
-                                          onClick={() => handleUpdateCart(item, 1)}
+                                          onClick={(e) => { e.stopPropagation(); handleUpdateCart(item, 1); }}
                                           className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-white shadow-sm hover:bg-green-700 hover:shadow transition-all"
                                       >
                                           <Plus className="w-4 h-4" />
@@ -283,7 +379,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                                   </div>
                               ) : (
                                   <button 
-                                      onClick={() => handleUpdateCart(item, 1)}
+                                      onClick={(e) => { e.stopPropagation(); handleUpdateCart(item, 1); }}
                                       className="w-9 h-9 rounded-full bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all shadow-sm hover:shadow"
                                   >
                                       <Plus className="w-5 h-5" />
@@ -291,7 +387,8 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                               );
                           })()}
                         </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-400">
                         <p className="text-xs">No items found for this style.</p>
@@ -310,8 +407,12 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                 {!generatedLookUrl && (
                     <button 
                     onClick={handleGetLook}
-                    disabled={isGeneratingLook}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all transform active:scale-95 disabled:opacity-50"
+                    disabled={isGeneratingLook || selectedItemIds.size === 0}
+                    className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all transform active:scale-95 disabled:opacity-50 ${
+                      selectedItemIds.size > 0 
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white' 
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                     >
                     {isGeneratingLook ? (
                         <>
@@ -321,7 +422,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                     ) : (
                         <>
                             <Sparkles className="w-4 h-4" />
-                            Get Look
+                            Get Look ({selectedItemIds.size} items)
                         </>
                     )}
                     </button>
