@@ -85,7 +85,7 @@ export default function CollectionsPage() {
                       </span>
                     )}
                     
-                    <h3 className="text-3xl font-bold text-white leading-tight font-serif tracking-wide">
+                    <h3 className="text-3xl font-bold text-white leading-tight tracking-wide">
                       {collection.name}
                     </h3>
                   </div>

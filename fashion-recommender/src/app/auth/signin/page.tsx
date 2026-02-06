@@ -25,16 +25,17 @@ export default function SignIn() {
     });
 
     if (result?.error) {
-      setError('Invalid email or password');
+      console.error("Sign in error:", result.error);
+      setError(result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error);
       setLoading(false);
     } else {
-      router.push('/');
+      router.push('/shop');
       router.refresh();
     }
   };
 
   return (
-    <div className="min-h-screen flex w-full">
+    <div className="h-screen w-full flex overflow-hidden">
       {/* Left Side - Image & Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gray-900 relative flex-col justify-between p-12 text-white overflow-hidden">
         {/* Background Image Overlay */}
@@ -54,20 +55,20 @@ export default function SignIn() {
            <Image 
              src="/logo.jpg" 
              alt="Style Genie Logo" 
-             width={32} 
-             height={32} 
-             className="h-8 w-8 object-contain rounded-sm"
+             width={40} 
+             height={40} 
+             className="h-10 w-10 object-contain rounded-lg"
            />
-           <span className="font-bold text-xl tracking-tight text-white">STYLE GENIE</span>
+           <span className="font-bold text-2xl tracking-tight text-white">Style Genie</span>
         </div>
 
         {/* Hero Text */}
         <div className="relative z-10 max-w-lg">
-          <h1 className="text-5xl font-bold leading-tight mb-6">
+          <h1 className="text-5xl font-medium leading-tight mb-6">
             Elevate Your Wardrobe with AI.
           </h1>
           <p className="text-gray-200 text-lg leading-relaxed">
-            Experience a new era of personalized fashion. Log in to access your curated style feed and AI recommendations.
+            Experience a new era of personalized fashion. Log in to access your curated style feed and proprietary AI recommendations.
           </p>
         </div>
 
@@ -79,9 +80,9 @@ export default function SignIn() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-6 sm:p-8 lg:p-12">
-        <div className="max-w-md w-full">
-          {/* Mobile Logo/Branding (Visible only on small screens) */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8 lg:p-12 h-full overflow-hidden">
+        <div className="max-w-md w-full flex flex-col justify-center h-full max-h-[800px]">
+          {/* Mobile Logo (Visible only on small screens) */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <Image 
               src="/logo.jpg" 
@@ -90,24 +91,24 @@ export default function SignIn() {
               height={32} 
               className="h-8 w-8 object-contain rounded-sm"
             />
-            <span className="font-bold text-xl tracking-tight text-gray-900">STYLE GENIE</span>
+            <span className="font-bold text-xl tracking-tight text-gray-900">Style Genie</span>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-500">Please enter your details to sign in.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome Back</h2>
+            <p className="text-sm text-gray-500">Enter your credentials to access your studio.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-xs font-semibold text-gray-700 mb-2">
                 Email Address
               </label>
               <input
                 id="email"
                 type="email"
                 required
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-green-600 focus:ring-0 transition-all outline-none text-gray-900 placeholder-gray-400 bg-gray-50"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all placeholder-gray-400 text-sm"
                 placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -115,72 +116,65 @@ export default function SignIn() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">
-                Password
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="password" className="block text-xs font-semibold text-gray-700">
+                  Password
+                </label>
+                <button type="button" className="text-xs font-bold text-green-600 hover:text-green-500">
+                  Forgot password?
+                </button>
+              </div>
               <input
                 id="password"
                 type="password"
                 required
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-green-600 focus:ring-0 transition-all outline-none text-gray-900 placeholder-gray-400 bg-gray-50"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all placeholder-gray-400 text-sm"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <div className="flex justify-end mt-1">
-                <button type="button" className="text-sm font-medium text-green-600 hover:text-green-500">
-                  Forgot password?
-                </button>
-              </div>
             </div>
 
             <div className="flex items-center">
               <input
                 id="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
+                className="h-3.5 w-3.5 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="remember-me" className="ml-2 block text-xs text-gray-500 cursor-pointer">
                 Stay signed in for 30 days
               </label>
             </div>
 
-            {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
+            {error && <div className="p-2.5 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-medium">{error}</div>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all disabled:opacity-50"
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-full shadow-md hover:shadow-lg text-base font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all disabled:opacity-50 mt-2"
             >
-              {loading ? 'Signing in...' : 'Sign In ->'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-gray-500">
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/signup" className="font-semibold text-green-600 hover:text-green-500">
-              Sign up
-            </Link>
-          </div>
-
-          <div className="mt-8">
+          <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-gray-100"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium text-[10px] tracking-widest uppercase">
+                <span className="px-2 bg-white text-gray-400 font-medium text-[10px] tracking-widest uppercase">
                   Or continue with
                 </span>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-4">
+            <div className="mt-4 flex justify-center gap-3">
               <button
                 type="button"
-                className="flex items-center justify-center px-4 py-3 border border-gray-200 rounded-full shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center w-12 h-12 border border-gray-200 rounded-full shadow-sm bg-white hover:bg-gray-50 transition-all"
               >
-                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                     fill="#4285F4"
@@ -198,26 +192,24 @@ export default function SignIn() {
                     fill="#EA4335"
                   />
                 </svg>
-                Google
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center px-4 py-3 border border-gray-200 rounded-full shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center w-12 h-12 border border-gray-200 rounded-full shadow-sm bg-white hover:bg-gray-50 transition-all text-gray-900"
               >
-                <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.24.75-.42 1.56-.81 2.27-.38.76-.74 1.55-1.72 1.81zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.39-1.09-.52-2.04-.48-3.24 0-1.44.58-2.2.08-3.08-.88-1.91-2.05-1.42-5.96 1.48-6.12 1.28-.07 2.15.54 2.89.54.71 0 1.94-.65 3.33-.55 2.13.15 3.06 1.15 3.52 1.84-2.88 1.55-2.39 5.37.64 6.42-.64 1.41-1.49 2.8-2.46 3.82zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                 </svg>
-                Apple
               </button>
             </div>
-          </div>
 
-          <p className="mt-8 text-center text-sm text-gray-600">
-            New to Style Genie?{' '}
-            <Link href="#" className="font-semibold text-green-600 hover:text-green-500">
-              Create an account
-            </Link>
-          </p>
+            <div className="mt-8 text-center text-sm text-gray-500">
+                New to Style Genie?{' '}
+                <Link href="/auth/signup" className="font-bold text-gray-900 border-b border-gray-900 hover:text-green-600 hover:border-green-600 transition-all">
+                Create an account
+                </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

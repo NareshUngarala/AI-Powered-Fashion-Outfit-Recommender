@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, password } = body;
+    const { name, email, password, gender, preferredStyle } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, gender, preferredStyle }),
     });
 
     if (!response.ok) {

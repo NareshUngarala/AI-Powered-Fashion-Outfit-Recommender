@@ -60,12 +60,12 @@ export default async function Home() {
                 <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Powered by Neural Styles</span>
               </div>
               
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight tracking-tight text-gray-900 max-w-4xl">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold leading-tight tracking-tight text-gray-900 max-w-4xl">
                 Your Personal <br className="hidden md:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-green-400">AI Stylist</span> Awaits
               </h1>
               
-              <p className="text-base sm:text-lg md:text-xl text-gray-500 leading-relaxed max-w-2xl px-4">
+              <p className="text-base sm:text-lg md:text-xl text-gray-500 leading-relaxed max-w-2xl px-4 lg:px-0">
                 Discover outfits curated uniquely for your body type and style preferences. High-end fashion meets machine learning to redefine your wardrobe.
               </p>
               
@@ -127,7 +127,7 @@ export default async function Home() {
               </Link>
            </div>
            
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {collections.length > 0 ? (
                 collections.map((collection: ICollection) => (
                    <Link key={collection._id} href={`/collections/${collection.slug}`} className="group relative aspect-[3/4] overflow-hidden rounded-2xl cursor-pointer">

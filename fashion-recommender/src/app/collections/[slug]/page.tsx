@@ -36,7 +36,7 @@ export default function CollectionDetailsPage() {
           </Link>
           
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-serif font-medium text-gray-900">
+            <h1 className="text-4xl md:text-5xl font-medium text-gray-900">
               {categoryExists ? slug : 'Style Not Found'}
             </h1>
             {categoryExists && (

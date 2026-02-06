@@ -15,7 +15,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-            const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+            // Use 127.0.0.1 as default to avoid IPv6 issues with localhost on Windows
+            const backendUrl = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000';
+            console.log(`Attempting login to: ${backendUrl}/auth/login with email: ${credentials.email}`);
+            
             const response = await fetch(`${backendUrl}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -26,6 +29,8 @@ export const authOptions: NextAuthOptions = {
             });
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Auth failed: ${response.status} ${response.statusText} - ${errorText}`);
                 return null;
             }
 
@@ -36,9 +41,20 @@ export const authOptions: NextAuthOptions = {
                 user.id = user._id;
             }
             
+            // CRITICAL FIX: Remove Base64 image from user object before returning.
+            // Storing large Base64 strings in the session/token (Cookies) causes header overflow
+            // and results in "Failed to fetch" or 500 errors during sign-in.
+            if (user.image && user.image.length > 1000) {
+                user.image = null; 
+            }
+
             return user;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Auth error:", error);
+            // Throw specific error for connection issues so user knows to check backend
+            if (error.message.includes('fetch failed') || (error.cause && error.cause.code === 'ECONNREFUSED')) {
+                throw new Error("Connection failed: Backend server unreachable. Is it running on port 8000?");
+            }
             return null;
         }
       },

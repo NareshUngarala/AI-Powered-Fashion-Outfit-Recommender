@@ -8,10 +8,8 @@ import {
   Settings, 
   Package, 
   Heart, 
-  CreditCard, 
   LogOut,
   Sparkles,
-  MapPin,
   Camera,
   Clock,
   Edit2,
@@ -19,13 +17,14 @@ import {
   Trash2,
   Lock,
   ShieldAlert,
-  Plus,
   Check,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  ChevronRight
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface OrderItem {
   name: string;
@@ -59,14 +58,7 @@ interface Product {
   category: string;
 }
 
-interface PaymentMethod {
-  _id: string;
-  cardType: string;
-  last4: string;
-  expiryMonth: string;
-  expiryYear: string;
-  cardHolderName: string;
-}
+// PaymentMethod interface removed
 
 interface OutfitItem {
   _id: string;
@@ -92,9 +84,8 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [outfits, setOutfits] = useState<Outfit[]>([]);
-  const [payments, setPayments] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('orders'); // orders, info, wishlist, payments, settings
+  const [activeTab, setActiveTab] = useState('orders'); // orders, info, wishlist, settings
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ 
     name: '', 
@@ -104,20 +95,70 @@ export default function ProfilePage() {
   });
   
   // New States for Forms
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({
-    cardNumber: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cardHolderName: '',
-    cardType: 'Visa'
-  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image(); // Use window.Image to avoid conflict with next/image
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 500;
+          const MAX_HEIGHT = 500;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6)); // Compress to JPEG with 0.6 quality
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (limit to 5MB before compression)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size too large. Please select an image under 5MB.");
+        return;
+      }
+
+      try {
+        const resizedImage = await resizeImage(file);
+        setEditForm(prev => ({ ...prev, image: resizedImage }));
+      } catch (error) {
+        console.error("Error resizing image:", error);
+        alert("Failed to process image. Please try another one.");
+      }
+    }
+  };
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -166,14 +207,6 @@ export default function ProfilePage() {
           setOutfits(outfitsData.data);
         }
 
-        // Fetch Payments
-        const paymentsRes = await fetch('/api/user/payments');
-        const paymentsData = await paymentsRes.json();
-        
-        if (paymentsData.success) {
-          setPayments(paymentsData.data);
-        }
-
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -190,11 +223,23 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payloadSize = JSON.stringify(editForm).length;
+      console.log(`Attempting to send profile update. Payload size: ${(payloadSize / 1024).toFixed(2)} KB`);
+
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
       });
+      
+      if (!res.ok) {
+        if (res.status === 413) {
+            throw new Error('Image too large. Please choose a smaller image.');
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server error: ${res.status}`);
+      }
+
       const data = await res.json();
       if (data.success) {
         setProfile(data.data);
@@ -202,9 +247,14 @@ export default function ProfilePage() {
       } else {
         alert(data.message || 'Failed to update profile');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update error:', error);
-      alert('An error occurred');
+      // Handle network errors (Failed to fetch) specifically
+      if (error.message === 'Failed to fetch') {
+          alert('Network error: Could not connect to the server. The image might be too large or the server is unreachable.');
+      } else {
+          alert(error.message || 'An error occurred while updating profile');
+      }
     }
   };
 
@@ -222,39 +272,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAddPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/user/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentForm),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPayments([data.data, ...payments]);
-        setShowPaymentForm(false);
-        setPaymentForm({ cardNumber: '', expiryMonth: '', expiryYear: '', cardHolderName: '', cardType: 'Visa' });
-      } else {
-        alert(data.message || 'Failed to add payment method');
-      }
-    } catch (error) {
-      console.error('Add payment error:', error);
-    }
-  };
-
-  const handleDeletePayment = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this card?')) return;
-    try {
-      const res = await fetch(`/api/user/payments?id=${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setPayments(payments.filter(p => p._id !== id));
-      }
-    } catch (error) {
-      console.error('Delete payment error:', error);
-    }
-  };
+// Payment handling functions removed
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,640 +337,630 @@ export default function ProfilePage() {
     });
   };
 
-  const styleStats = {
-    vibe: profile?.preferredStyle || "Urban Minimalist",
-    matchRate: "94%",
-    scans: 12
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 selection:bg-green-100 selection:text-green-900">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col bg-gray-50/50 font-sans text-gray-900 selection:bg-green-100 selection:text-green-900">
       <Navbar />
-
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        
-        {/* Profile Header Card */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6 relative overflow-hidden">
-           <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-green-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
-
-           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-              <div className="relative group cursor-pointer" onClick={() => setIsEditing(true)}>
-                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white shadow-lg relative bg-gray-200">
+      {isEditing ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <h3 className="text-2xl font-bold text-gray-900">Edit Profile</h3>
+              <button 
+                onClick={() => setIsEditing(false)}
+                className="p-3 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateProfile} className="p-8 space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Full Name</label>
+                <input 
+                  type="text" 
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white text-base"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Avatar URL</label>
+                <div className="flex gap-4">
+                  <div 
+                    className="relative w-14 h-14 rounded-full overflow-hidden bg-gray-100 shrink-0 border border-gray-200 group/avatar cursor-pointer hover:ring-2 hover:ring-green-500 transition-all"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Image 
-                      src={profile.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"} 
-                      alt={profile.name} 
-                      fill 
+                      src={editForm.image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
+                      alt="Preview"
+                      fill
                       className="object-cover"
                     />
-                 </div>
-                 <div className="absolute bottom-2 right-2 bg-gray-900 text-white p-2 rounded-full shadow-md group-hover:bg-green-600 transition-colors">
-                    <Camera className="w-4 h-4" />
-                 </div>
-              </div>
-              
-              <div className="text-center md:text-left space-y-2 flex-1">
-                 <div className="flex flex-col md:flex-row md:items-center gap-3 justify-center md:justify-start">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{profile.name}</h1>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide">
-                      <Sparkles className="w-3 h-3" />
-                      Style Icon
-                    </span>
-                    <button 
-                      onClick={() => setIsEditing(true)}
-                      className="text-gray-400 hover:text-green-600 transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                 </div>
-                 <p className="text-gray-500">{profile.email}</p>
-                 <div className="flex items-center justify-center md:justify-start gap-4 text-sm text-gray-400 pt-1">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Member since {formatDate(profile.createdAt)}</span>
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> New York, USA</span>
-                 </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex gap-6 md:gap-8 border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-8 mt-4 md:mt-0">
-                 <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">Orders</div>
-                 </div>
-                 <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">{styleStats.scans}</div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">Scans</div>
-                 </div>
-                 <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{styleStats.matchRate}</div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">Match Rate</div>
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-           {/* Sidebar Navigation */}
-           <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                 <div className="p-4 bg-gray-50 border-b border-gray-100">
-                    <h3 className="font-semibold text-gray-900">Account</h3>
-                 </div>
-                 <nav className="p-2 space-y-1">
-                    <button 
-                      onClick={() => setActiveTab('orders')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'orders' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                       <Package className="w-5 h-5" />
-                       My Orders
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('outfits')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'outfits' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                       <Sparkles className="w-5 h-5" />
-                       My Outfits
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('info')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'info' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                       <UserIcon className="w-5 h-5" />
-                       Personal Info
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('wishlist')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'wishlist' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                       <Heart className="w-5 h-5" />
-                       Wishlist
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('payments')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'payments' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                       <CreditCard className="w-5 h-5" />
-                       Payment Methods
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('settings')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === 'settings' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                       <Settings className="w-5 h-5" />
-                       Settings
-                    </button>
-                 </nav>
-                 <div className="p-4 border-t border-gray-100 mt-2">
-                    <button 
-                      onClick={() => signOut({ callbackUrl: '/' })}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                    >
-                       <LogOut className="w-5 h-5" />
-                       Sign Out
-                    </button>
-                 </div>
-              </div>
-
-              {/* Style Profile Card */}
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                 <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-4">
-                       <Sparkles className="w-5 h-5 text-yellow-400" />
-                       <h3 className="font-semibold">Your Vibe</h3>
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                        <Camera className="w-5 h-5 text-white" />
                     </div>
-                    <p className="text-3xl font-bold mb-1">{styleStats.vibe}</p>
-                    <p className="text-gray-400 text-sm mb-6">Based on your recent picks</p>
-                    <button className="w-full py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl text-sm font-medium transition-colors border border-white/10">
-                       Retake Style Quiz
-                    </button>
-                 </div>
-              </div>
-           </div>
-
-           {/* Main Content Area */}
-           <div className="lg:col-span-3 space-y-6">
-              
-              {/* ORDERS TAB */}
-              {activeTab === 'orders' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                   <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                      <h2 className="text-lg font-bold text-gray-900">Recent Orders</h2>
-                   </div>
-                   
-                   <div className="divide-y divide-gray-100">
-                      {orders.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
-                          No orders found. Start shopping to see your orders here!
-                        </div>
-                      ) : (
-                        orders.map((order) => (
-                          <div key={order._id} className="p-6 hover:bg-gray-50 transition-colors group">
-                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <div className="flex items-center gap-4">
-                                   <div className="bg-gray-100 p-2 rounded-lg">
-                                      <Package className="w-5 h-5 text-gray-600" />
-                                   </div>
-                                   <div>
-                                      <div className="font-semibold text-gray-900">{order.orderId}</div>
-                                      <div className="text-sm text-gray-500">{formatDate(order.createdAt)}</div>
-                                   </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                   <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                                      order.status === 'Delivered' ? 'bg-green-50 text-green-700 border-green-100' :
-                                      order.status === 'In Transit' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                      'bg-yellow-50 text-yellow-700 border-yellow-100'
-                                   }`}>
-                                      {order.status}
-                                   </span>
-                                   <span className="font-bold text-gray-900">₹{order.total.toFixed(2)}</span>
-                                </div>
-                             </div>
-    
-                             <div className="flex items-center gap-4 pl-0 sm:pl-[60px]">
-                                <div className="flex -space-x-3">
-                                   {order.items.slice(0, 3).map((item, index) => (
-                                      <div key={index} className="w-10 h-10 rounded-full border-2 border-white relative overflow-hidden bg-gray-100">
-                                         <Image 
-                                           src={item.image} 
-                                           alt={item.name} 
-                                           fill 
-                                           className="object-cover"
-                                         />
-                                      </div>
-                                   ))}
-                                   {order.items.length > 3 && (
-                                      <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-50 flex items-center justify-center text-xs font-medium text-gray-500">
-                                         +{order.items.length - 3}
-                                      </div>
-                                   )}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                   {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                                </div>
-                                <Link 
-                                  href={`/orders/${order.orderId || order._id}`}
-                                  className="ml-auto text-sm font-medium text-gray-900 hover:text-green-600 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                   View Details
-                                </Link>
-                             </div>
-                          </div>
-                        ))
-                      )}
-                   </div>
-                </div>
-              )}
-
-              {/* OUTFITS TAB */}
-              {activeTab === 'outfits' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                   <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                      <h2 className="text-lg font-bold text-gray-900">My Saved Outfits</h2>
-                      <span className="text-sm text-gray-500">{outfits.length} outfits</span>
-                   </div>
-                   
-                   <div className="p-6">
-                      {outfits.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">
-                          <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                          <p>No outfits saved yet. Use the AI Stylist to create some!</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 gap-6">
-                          {outfits.map((outfit) => (
-                            <div key={outfit._id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                               <div className="flex justify-between items-start mb-4">
-                                  <div>
-                                    <h3 className="font-bold text-lg text-gray-900">{outfit.name || 'Untitled Outfit'}</h3>
-                                    <p className="text-sm text-gray-500">{formatDate(outfit.createdAt)}</p>
-                                  </div>
-                               </div>
-                               
-                               <div className="mb-4 bg-green-50 p-4 rounded-lg">
-                                  <p className="text-sm text-green-800 italic">&quot;{outfit.styleAdvice}&quot;</p>
-                               </div>
-
-                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                  {outfit.items.map((item, idx) => (
-                                    <div key={idx} className="group relative">
-                                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
-                                          <Image 
-                                            src={item.image || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300"} 
-                                            alt={item.name} 
-                                            fill 
-                                            className="object-cover group-hover:scale-105 transition-transform"
-                                          />
-                                       </div>
-                                       <div className="mt-2">
-                                          <p className="font-medium text-sm text-gray-900 truncate">{item.name}</p>
-                                          <p className="text-xs text-gray-500">{item.category}</p>
-                                          <div className="flex justify-between items-center mt-1">
-                                             <span className="text-xs font-bold">₹{item.price}</span>
-                                             <Link href={`/products/${item._id}`} className="text-xs text-green-600 hover:underline">
-                                               View
-                                             </Link>
-                                          </div>
-                                       </div>
-                                    </div>
-                                  ))}
-                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                   </div>
-                </div>
-              )}
-
-              {/* PERSONAL INFO TAB */}
-              {activeTab === 'info' && (
-                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                       <h2 className="text-lg font-bold text-gray-900">Personal Information</h2>
-                       <button 
-                         onClick={() => setIsEditing(true)}
-                         className="text-sm text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
-                       >
-                         <Edit2 className="w-4 h-4" /> Edit
-                       </button>
-                    </div>
-                    <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                          <p className="text-sm text-gray-500 mb-1">Full Name</p>
-                          <p className="font-semibold text-gray-900">{profile.name}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                          <p className="text-sm text-gray-500 mb-1">Email Address</p>
-                          <p className="font-semibold text-gray-900">{profile.email}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                          <p className="text-sm text-gray-500 mb-1">Member Since</p>
-                          <p className="font-semibold text-gray-900">{formatDate(profile.createdAt)}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                          <p className="text-sm text-gray-500 mb-1">User ID</p>
-                          <p className="font-mono text-sm font-medium text-gray-900">{profile._id}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                          <p className="text-sm text-gray-500 mb-1">Gender Preference</p>
-                          <p className="font-semibold text-gray-900">{profile.gender || 'Not specified'}</p>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-xl">
-                          <p className="text-sm text-gray-500 mb-1">Style Vibe</p>
-                          <p className="font-semibold text-gray-900">{profile.preferredStyle || 'Not specified'}</p>
-                        </div>
-                      </div>
-                    </div>
-                 </div>
-              )}
-
-              {/* WISHLIST TAB */}
-              {activeTab === 'wishlist' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                     <h2 className="text-lg font-bold text-gray-900">My Wishlist</h2>
-                     <span className="text-sm text-gray-500">{wishlist.length} items</span>
                   </div>
-                  <div className="p-6">
-                    {wishlist.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8">
-                        Your wishlist is empty. Go find something you love!
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {wishlist.map((product) => (
-                          <div key={product._id} className="group relative border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-                            <div className="aspect-square relative bg-gray-100">
-                              <Image 
-                                src={product.images[0]} 
-                                alt={product.name} 
-                                fill 
-                                className="object-cover"
-                              />
-                              <button 
-                                onClick={() => removeFromWishlist(product._id)}
-                                className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-red-500 hover:bg-white transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <div className="p-4">
-                              <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
-                              <p className="text-gray-500 text-sm mt-1">{product.category}</p>
-                              <div className="mt-2 flex items-center justify-between">
-                                <span className="font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
-                                <Link 
-                                  href={`/products/${product._id}`}
-                                  className="text-xs font-medium text-green-600 hover:text-green-700"
-                                >
-                                  View
-                                </Link>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="flex-1 space-y-2">
+                    <input 
+                      type="url" 
+                      value={editForm.image}
+                      onChange={(e) => setEditForm({...editForm, image: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white text-base"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                    />
                   </div>
                 </div>
-              )}
-
-              {/* PAYMENTS TAB */}
-              {activeTab === 'payments' && (
-                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                       <h2 className="text-lg font-bold text-gray-900">Payment Methods</h2>
-                       <button 
-                         onClick={() => setShowPaymentForm(true)}
-                         className="text-sm bg-black text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
-                       >
-                         <Plus className="w-4 h-4" /> Add Card
-                       </button>
-                    </div>
-                    
-                    {showPaymentForm && (
-                      <div className="p-6 bg-gray-50 border-b border-gray-100">
-                        <form onSubmit={handleAddPayment} className="space-y-4 max-w-lg">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                            <input 
-                              type="text" 
-                              placeholder="0000 0000 0000 0000"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                              value={paymentForm.cardNumber}
-                              onChange={e => setPaymentForm({...paymentForm, cardNumber: e.target.value})}
-                              required
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry (MM)</label>
-                              <input 
-                                type="text" 
-                                placeholder="MM"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                                value={paymentForm.expiryMonth}
-                                onChange={e => setPaymentForm({...paymentForm, expiryMonth: e.target.value})}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry (YY)</label>
-                              <input 
-                                type="text" 
-                                placeholder="YY"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                                value={paymentForm.expiryYear}
-                                onChange={e => setPaymentForm({...paymentForm, expiryYear: e.target.value})}
-                                required
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cardholder Name</label>
-                            <input 
-                              type="text" 
-                              placeholder="Name on Card"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                              value={paymentForm.cardHolderName}
-                              onChange={e => setPaymentForm({...paymentForm, cardHolderName: e.target.value})}
-                              required
-                            />
-                          </div>
-                          <div className="flex gap-3">
-                            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">Save Card</button>
-                            <button type="button" onClick={() => setShowPaymentForm(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300">Cancel</button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-
-                    <div className="p-6">
-                      {payments.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">
-                          <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                          <p>No payment methods saved yet.</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {payments.map(method => (
-                            <div key={method._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-8 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-500">
-                                  {method.cardType}
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-900">•••• •••• •••• {method.last4}</p>
-                                  <p className="text-sm text-gray-500">Expires {method.expiryMonth}/{method.expiryYear}</p>
-                                </div>
-                              </div>
-                              <button 
-                                onClick={() => handleDeletePayment(method._id)}
-                                className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                 </div>
-              )}
-
-              {/* SETTINGS TAB */}
-              {activeTab === 'settings' && (
-                 <div className="space-y-6">
-                   {/* Password Settings */}
-                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                      <div className="p-6 border-b border-gray-100">
-                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                           <Lock className="w-5 h-5 text-gray-400" /> Security
-                         </h2>
-                      </div>
-                      <div className="p-6">
-                        <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                            <input 
-                              type="password" 
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                              value={passwordForm.currentPassword}
-                              onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                            <input 
-                              type="password" 
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                              value={passwordForm.newPassword}
-                              onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                            <input 
-                              type="password" 
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                              value={passwordForm.confirmPassword}
-                              onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                              required
-                            />
-                          </div>
-                          
-                          {passwordMessage.text && (
-                            <div className={`text-sm p-3 rounded-lg flex items-center gap-2 ${
-                              passwordMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                            }`}>
-                              {passwordMessage.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                              {passwordMessage.text}
-                            </div>
-                          )}
-
-                          <button type="submit" className="px-6 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800">
-                            Update Password
-                          </button>
-                        </form>
-                      </div>
-                   </div>
-
-                   {/* Danger Zone */}
-                   <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
-                      <div className="p-6 border-b border-red-100 bg-red-50/50">
-                         <h2 className="text-lg font-bold text-red-700 flex items-center gap-2">
-                           <ShieldAlert className="w-5 h-5" /> Danger Zone
-                         </h2>
-                      </div>
-                      <div className="p-6">
-                        <p className="text-gray-600 mb-4 text-sm">
-                          Once you delete your account, there is no going back. Please be certain.
-                        </p>
-                        <button 
-                          onClick={handleDeleteAccount}
-                          className="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
-                        >
-                          Delete Account
-                        </button>
-                      </div>
-                   </div>
-                 </div>
-              )}
-           </div>
-        </div>
-
-        {/* Edit Profile Modal */}
-        {isEditing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Edit Profile</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Gender Preference</label>
+                  <div className="relative">
+                    <select
+                      value={editForm.gender}
+                      onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white appearance-none text-base"
+                    >
+                      <option value="Men">Men</option>
+                      <option value="Women">Women</option>
+                      <option value="Unisex">Unisex</option>
+                    </select>
+                    <ChevronRight className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 rotate-90" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Style Vibe</label>
+                  <div className="relative">
+                    <select
+                      value={editForm.preferredStyle}
+                      onChange={(e) => setEditForm({...editForm, preferredStyle: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white appearance-none text-base"
+                    >
+                      <option value="" disabled>Select your vibe</option>
+                      <option value="Minimalist">Minimalist</option>
+                      <option value="Streetwear">Streetwear</option>
+                      <option value="Casual">Casual</option>
+                      <option value="Formal">Formal</option>
+                      <option value="Chic">Chic</option>
+                      <option value="Vintage">Vintage</option>
+                      <option value="Bohemian">Bohemian</option>
+                      <option value="Preppy">Preppy</option>
+                      <option value="Athleisure">Athleisure</option>
+                      <option value="Grunge">Grunge</option>
+                      <option value="Classic">Classic</option>
+                    </select>
+                    <ChevronRight className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 rotate-90" />
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4">
                 <button 
-                  onClick={() => setIsEditing(false)}
-                  className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                  type="submit" 
+                  className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  Save Changes
                 </button>
               </div>
-              <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  <input 
-                    type="text" 
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-                  <input 
-                    type="url" 
-                    value={editForm.image}
-                    onChange={(e) => setEditForm({...editForm, image: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                    placeholder="https://example.com/image.jpg"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Paste a link to an image to update your avatar.</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender Preference</label>
-                  <select
-                    value={editForm.gender}
-                    onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                  >
-                    <option value="Men">Men</option>
-                    <option value="Women">Women</option>
-                    <option value="Unisex">Unisex</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Style Preferences</label>
-                  <input 
-                    type="text" 
-                    value={editForm.preferredStyle}
-                    onChange={(e) => setEditForm({...editForm, preferredStyle: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                    placeholder="e.g. Minimalist, Streetwear, Vintage"
-                  />
-                </div>
-                <div className="pt-2">
+            </form>
+          </div>
+        </div>
+      ) : null}
+      <main className="flex-1 flex flex-col min-h-0 w-full px-4 py-4">
+        <div className="flex flex-col h-full space-y-4">
+
+          {/* Top Profile Header - full width */}
+          <div className="relative rounded-2xl overflow-hidden bg-gray-900 shadow-sm ring-1 ring-white/10 shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-green-600 to-emerald-600" />
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-soft-light" />
+            
+            <div className="relative z-10 p-5 md:p-6 flex flex-col md:flex-row items-center md:items-end gap-5">
+               <div className="relative group">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 bg-white/20 backdrop-blur-sm">
+                     <div className="w-full h-full rounded-full overflow-hidden border-2 md:border-4 border-white/90 relative bg-gray-200 shadow-xl">
+                        <Image 
+                          src={profile.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"} 
+                          alt={profile.name} 
+                          fill 
+                          className="object-cover"
+                        />
+                     </div>
+                  </div>
                   <button 
-                    type="submit" 
-                    className="w-full py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm"
+                    onClick={() => setIsEditing(true)}
+                    className="absolute bottom-0 right-0 bg-white text-gray-900 p-2 rounded-full shadow-lg hover:bg-gray-100 hover:scale-105 transition-all"
                   >
-                    Save Changes
+                     <Camera className="w-4 h-4" />
                   </button>
-                </div>
-              </form>
+               </div>
+               
+               <div className="text-center md:text-left flex-1 mb-1">
+                  <h1 className="text-xl md:text-3xl font-bold text-white mb-1 tracking-tight">{profile.name}</h1>
+                  <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-white/90 text-sm font-medium">
+                     <p className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
+                        {profile.email}
+                     </p>
+                     <span className="hidden md:block w-1 h-1 bg-white/30 rounded-full" />
+                     <p className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 text-xs">
+                        <Clock className="w-3.5 h-3.5" /> Member since {new Date(profile.createdAt).getFullYear()}
+                     </p>
+                  </div>
+               </div>
+
+               <div className="flex gap-5 bg-white/10 p-3 rounded-xl backdrop-blur-md border border-white/10">
+                  <div className="text-center px-4">
+                     <p className="text-2xl font-bold text-white">{orders.length}</p>
+                     <p className="text-sm text-white/80 uppercase tracking-widest font-bold">Orders</p>
+                  </div>
+                  <div className="w-px bg-white/10" />
+                  <div className="text-center px-4">
+                     <p className="text-2xl font-bold text-white">{outfits.length}</p>
+                     <p className="text-sm text-white/80 uppercase tracking-widest font-bold">Looks</p>
+                  </div>
+                  <div className="w-px bg-white/10" />
+                  <div className="text-center px-4">
+                     <p className="text-2xl font-bold text-white">{wishlist.length}</p>
+                     <p className="text-sm text-white/80 uppercase tracking-widest font-bold">Saved</p>
+                  </div>
+               </div>
             </div>
           </div>
-        )}
 
+          {/* Content grid below header */}
+          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          
+          {/* Sidebar - Account Explorer */}
+          <div className="lg:col-span-3 lg:h-full lg:overflow-y-auto pr-1 custom-scrollbar">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+               <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Account Explorer</h2>
+               <nav className="space-y-2">
+                  <button 
+                    onClick={() => setActiveTab('orders')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
+                      activeTab === 'orders' 
+                        ? 'bg-green-600 text-white shadow-lg shadow-gray-200 scale-[1.02]' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                     <Package className={`w-5 h-5 ${activeTab === 'orders' ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'}`} />
+                     Recent Acquisitions
+                     {activeTab === 'orders' && <ChevronRight className="w-3 h-3 ml-auto text-gray-500" />}
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('outfits')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
+                      activeTab === 'outfits' 
+                        ? 'bg-green-600 text-white shadow-lg shadow-gray-200 scale-[1.02]' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                     <Sparkles className={`w-5 h-5 ${activeTab === 'outfits' ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'}`} />
+                     Style Timeline
+                     {activeTab === 'outfits' && <ChevronRight className="w-3 h-3 ml-auto text-gray-500" />}
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('wishlist')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
+                      activeTab === 'wishlist' 
+                        ? 'bg-green-600 text-white shadow-lg shadow-gray-200 scale-[1.02]' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                     <Heart className={`w-5 h-5 ${activeTab === 'wishlist' ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'}`} />
+                     Wishlist
+                     {activeTab === 'wishlist' && <ChevronRight className="w-3 h-3 ml-auto text-gray-500" />}
+                  </button>
+                  
+                  <div className="pt-3 pb-2">
+                    <div className="h-px bg-gray-100" />
+                  </div>
+
+                  <button 
+                    onClick={() => setActiveTab('info')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
+                      activeTab === 'info' 
+                        ? 'bg-green-600 text-white shadow-lg shadow-gray-200 scale-[1.02]' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                     <UserIcon className={`w-5 h-5 ${activeTab === 'info' ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'}`} />
+                     Profile Settings
+                     {activeTab === 'info' && <ChevronRight className="w-3 h-3 ml-auto text-gray-500" />}
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('settings')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
+                      activeTab === 'settings' 
+                        ? 'bg-green-600 text-white shadow-lg shadow-gray-200 scale-[1.02]' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                     <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'}`} />
+                     Security
+                     {activeTab === 'settings' && <ChevronRight className="w-3 h-3 ml-auto text-gray-500" />}
+                  </button>
+                  
+                  <div className="pt-2">
+                     <button 
+                       onClick={() => signOut({ callbackUrl: '/' })}
+                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-1 group"
+                     >
+                        <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Sign Out
+                     </button>
+                  </div>
+               </nav>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-9 relative lg:h-full">
+            <div className="lg:absolute lg:inset-0 lg:overflow-y-auto pr-1 custom-scrollbar space-y-4">
+             {/* Dynamic Content Area */}
+             <div>
+                
+                {/* ORDERS TAB */}
+                {activeTab === 'orders' && (
+                  <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                     <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Recent Acquisitions</h3>
+                        <div className="text-base text-gray-500 font-medium">
+                           {orders.length} orders found
+                        </div>
+                     </div>
+                     
+                     <div className="space-y-5">
+                        {orders.length === 0 ? (
+                          <div className="bg-white rounded-2xl p-8 text-center border border-dashed border-gray-200">
+                             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Package className="w-8 h-8 text-gray-400" />
+                             </div>
+                             <h4 className="text-xl font-bold text-gray-900 mb-2">No orders yet</h4>
+                             <p className="text-gray-500 mb-6 max-w-sm mx-auto text-base">Your wardrobe is waiting for its first addition. Explore our collection to find your perfect style.</p>
+                             <Link href="/products" className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl text-base font-medium hover:bg-green-700 transition-colors">
+                                Start Shopping <ChevronRight className="w-5 h-5" />
+                             </Link>
+                          </div>
+                        ) : (
+                          orders.map((order) => (
+                            <div key={order._id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-4">
+                                  <div className="flex items-center gap-4">
+                                     <div className="bg-gray-50 p-3 rounded-xl">
+                                        <Package className="w-6 h-6 text-gray-900" />
+                                     </div>
+                                     <div>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                           <span className="font-bold text-gray-900 text-xl">{order.orderId}</span>
+                                           <span className={`px-3 py-1 rounded-full text-sm font-bold border ${
+                                              order.status === 'Delivered' ? 'bg-green-50 text-green-700 border-green-100' :
+                                              order.status === 'In Transit' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                              'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                           }`}>
+                                              {order.status}
+                                           </span>
+                                        </div>
+                                        <div className="text-base text-gray-500 flex items-center gap-1.5">
+                                           <Clock className="w-4 h-4" /> {formatDate(order.createdAt)}
+                                        </div>
+                                     </div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                     <div className="text-right">
+                                        <p className="text-sm text-gray-500 mb-0.5">Total Amount</p>
+                                        <p className="text-xl font-bold text-gray-900">₹{order.total.toFixed(2)}</p>
+                                     </div>
+                                     <Link 
+                                       href={`/orders/${order.orderId || order._id}`}
+                                       className="p-3 rounded-xl bg-gray-50 text-gray-900 hover:bg-green-600 hover:text-white transition-all"
+                                     >
+                                        <ChevronRight className="w-5 h-5" />
+                                     </Link>
+                                  </div>
+                               </div>
+      
+                               <div className="flex items-center gap-4 pt-4 border-t border-gray-50">
+                                  <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300">
+                                     {order.items.slice(0, 4).map((item, index) => (
+                                        <div key={index} className="w-12 h-12 rounded-xl border-2 border-white relative overflow-hidden bg-gray-100 shadow-sm hover:scale-110 hover:z-10 transition-all">
+                                           <Image 
+                                             src={item.image} 
+                                             alt={item.name} 
+                                             fill 
+                                             className="object-cover"
+                                           />
+                                        </div>
+                                     ))}
+                                     {order.items.length > 4 && (
+                                        <div className="w-12 h-12 rounded-xl border-2 border-white bg-gray-900 flex items-center justify-center text-sm font-bold text-white shadow-sm z-10">
+                                           +{order.items.length - 4}
+                                        </div>
+                                     )}
+                                  </div>
+                                  <span className="text-base font-medium text-gray-600 ml-1">
+                                     {order.items.length} items purchased
+                                  </span>
+                               </div>
+                            </div>
+                          ))
+                        )}
+                     </div>
+                  </div>
+                )}
+
+                {/* OUTFITS TAB */}
+                {activeTab === 'outfits' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                     <div className="flex items-center justify-between">
+                        <div>
+                           <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Style Timeline</h3>
+                           <p className="text-base text-gray-500 mt-1">Your AI-curated fashion journey</p>
+                        </div>
+                        <Link href="/stylist" className="hidden sm:flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl text-base font-medium hover:bg-green-700 transition-all shadow-lg shadow-gray-200">
+                           <Sparkles className="w-5 h-5" /> Generate New Look
+                        </Link>
+                     </div>
+                     
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Create New Card (Visible on all sizes) */}
+                        <Link href="/stylist" className="group relative flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-2xl hover:border-green-600 hover:bg-gray-50 transition-all min-h-[280px]">
+                           <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-5 group-hover:bg-white group-hover:shadow-md transition-all">
+                             <Plus className="w-10 h-10 text-gray-400 group-hover:text-green-600" />
+                           </div>
+                           <h4 className="text-xl font-bold text-gray-900">Create New Look</h4>
+                           <p className="text-base text-gray-500 text-center mt-3 max-w-[240px]">Let our AI stylist curate your next perfect outfit</p>
+                        </Link>
+
+                        {outfits.map((outfit) => (
+                           <div key={outfit._id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-all group flex flex-col">
+                              <div className="flex justify-between items-start mb-5">
+                                 <div>
+                                    <h4 className="font-bold text-xl text-gray-900 line-clamp-1">{outfit.name || 'Untitled Outfit'}</h4>
+                                    <p className="text-base text-gray-500 mt-1">{formatDate(outfit.createdAt)}</p>
+                                 </div>
+                                 <button className="p-3 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-red-500 transition-colors">
+                                    <Trash2 className="w-5 h-5" />
+                                 </button>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3 mb-5 flex-1">
+                                 {outfit.items.slice(0, 4).map((item, idx) => (
+                                    <div key={idx} className="aspect-square relative rounded-xl overflow-hidden bg-gray-50 group/item">
+                                       <Image 
+                                         src={item.image || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300"} 
+                                         alt={item.name} 
+                                         fill 
+                                         className="object-cover group-hover/item:scale-110 transition-transform duration-500"
+                                       />
+                                    </div>
+                                 ))}
+                              </div>
+
+                              <div className="bg-gray-50 rounded-xl p-5">
+                                 <p className="text-base text-gray-600 line-clamp-2 italic">
+                                    <Sparkles className="w-5 h-5 inline mr-2 text-purple-500" />
+                                    {outfit.styleAdvice}
+                                 </p>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+                )}
+
+                {/* WISHLIST TAB */}
+                {activeTab === 'wishlist' && (
+                   <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="flex items-center justify-between">
+                         <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Your Wishlist</h3>
+                         <span className="px-4 py-1.5 bg-gray-100 rounded-full text-sm font-bold text-gray-600">{wishlist.length} items</span>
+                      </div>
+                      
+                      {wishlist.length === 0 ? (
+                         <div className="bg-white rounded-2xl p-8 text-center border border-dashed border-gray-200">
+                            <Heart className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                            <h4 className="text-xl font-bold text-gray-900 mb-2">Wishlist is empty</h4>
+                            <p className="text-gray-500 mb-6 text-base">Save items you love to revisit them later.</p>
+                           <Link href="/products" className="inline-block px-8 py-3 bg-green-600 text-white rounded-xl text-base font-medium hover:bg-green-700 transition-colors">
+                               Browse Products
+                            </Link>
+                         </div>
+                      ) : (
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {wishlist.map((product) => (
+                               <div key={product._id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all group relative">
+                                  <div className="aspect-[4/5] relative bg-gray-100 overflow-hidden">
+                                     <Image 
+                                       src={product.images[0]} 
+                                       alt={product.name} 
+                                       fill 
+                                       className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                     />
+                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                     <button 
+                                       onClick={() => removeFromWishlist(product._id)}
+                                       className="absolute top-3 right-3 p-2.5 bg-white/90 backdrop-blur-sm rounded-full text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-300"
+                                     >
+                                        <Trash2 className="w-5 h-5" />
+                                     </button>
+                                  </div>
+                                  <div className="p-5">
+                                     <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                           <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">{product.category}</p>
+                                           <h3 className="font-bold text-gray-900 line-clamp-1 text-lg">{product.name}</h3>
+                                        </div>
+                                     </div>
+                                     <div className="flex items-center justify-between mt-4">
+                                        <span className="text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
+                                        <Link 
+                                          href={`/products/${product._id}`}
+                                          className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center gap-1.5"
+                                        >
+                                           View Details <ChevronRight className="w-4 h-4" />
+                                        </Link>
+                                     </div>
+                                  </div>
+                               </div>
+                            ))}
+                         </div>
+                      )}
+                   </div>
+                )}
+
+                {/* PERSONAL INFO TAB */}
+                {activeTab === 'info' && (
+                   <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="flex items-center justify-between">
+                         <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Profile Settings</h3>
+                         <button 
+                           onClick={() => setIsEditing(true)}
+                           className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-base font-medium hover:bg-green-700 transition-colors shadow-sm"
+                         >
+                            <Edit2 className="w-5 h-5" /> Edit Profile
+                         </button>
+                      </div>
+
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                            <div className="p-8 space-y-8">
+                               <h4 className="font-bold text-gray-900 flex items-center gap-3 text-xl">
+                                  <UserIcon className="w-6 h-6 text-gray-400" /> Basic Information
+                               </h4>
+                               <div className="space-y-6">
+                                  <div>
+                                     <p className="text-base font-bold text-gray-400 uppercase tracking-wider mb-2">Full Name</p>
+                                     <p className="text-xl font-semibold text-gray-900">{profile.name}</p>
+                                  </div>
+                                  <div>
+                                     <p className="text-base font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address</p>
+                                     <p className="text-xl font-semibold text-gray-900">{profile.email}</p>
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="p-8 space-y-8">
+                               <h4 className="font-bold text-gray-900 flex items-center gap-3 text-xl">
+                                  <Sparkles className="w-6 h-6 text-gray-400" /> Style Preferences
+                               </h4>
+                               <div className="space-y-6">
+                                  <div>
+                                     <p className="text-base font-bold text-gray-400 uppercase tracking-wider mb-2">Gender Preference</p>
+                                     <span className="inline-flex items-center px-5 py-2 rounded-full text-base font-medium bg-indigo-50 text-indigo-700">
+                                        {profile.gender || 'Not specified'}
+                                     </span>
+                                  </div>
+                                  <div>
+                                     <p className="text-base font-bold text-gray-400 uppercase tracking-wider mb-2">Style Vibe</p>
+                                     <p className="text-xl font-medium text-gray-900">{profile.preferredStyle || 'Not set yet'}</p>
+                                  </div>
+                                  <div className="pt-3">
+                                     <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-5">
+                                        <p className="text-base text-yellow-800 flex gap-3 leading-relaxed">
+                                           <Sparkles className="w-5 h-5 shrink-0 mt-0.5" />
+                                           Updating your style preferences helps our AI recommend better outfits for you.
+                                        </p>
+                                     </div>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                )}
+
+                {/* SETTINGS TAB */}
+                {activeTab === 'settings' && (
+                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div>
+                         <h3 className="text-2xl font-bold text-gray-900 tracking-tight mb-4">Security & Danger Zone</h3>
+                         
+                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Password Update */}
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                               <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-4 text-xl">
+                                  <Lock className="w-5 h-5 text-gray-400" /> Update Password
+                               </h4>
+                               <form onSubmit={handleChangePassword} className="space-y-4">
+                                  <div>
+                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Password</label>
+                                     <input 
+                                       type="password" 
+                                       className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-base"
+                                       value={passwordForm.currentPassword}
+                                       onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                       required
+                                     />
+                                  </div>
+                                  <div>
+                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+                                     <input 
+                                       type="password" 
+                                       className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-base"
+                                       value={passwordForm.newPassword}
+                                       onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                       required
+                                     />
+                                  </div>
+                                  <div>
+                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm New Password</label>
+                                     <input 
+                                       type="password" 
+                                       className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-base"
+                                       value={passwordForm.confirmPassword}
+                                       onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                       required
+                                     />
+                                  </div>
+                                  
+                                  {passwordMessage.text && (
+                                     <div className={`text-sm p-4 rounded-xl flex items-center gap-3 ${
+                                        passwordMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                     }`}>
+                                        {passwordMessage.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                        {passwordMessage.text}
+                                     </div>
+                                  )}
+
+                                  <div className="pt-2">
+                                     <button type="submit" className="w-full px-6 py-3 bg-green-600 text-white rounded-xl text-base font-bold hover:bg-green-700 transition-colors shadow-lg shadow-gray-200">
+                                        Update Password
+                                     </button>
+                                  </div>
+                               </form>
+                            </div>
+
+                            {/* Danger Zone */}
+                            <div className="space-y-4">
+                               <div className="bg-red-50 rounded-2xl border border-red-100 p-6">
+                                  <h4 className="font-bold text-red-700 flex items-center gap-2 mb-3 text-xl">
+                                     <ShieldAlert className="w-5 h-5" /> Danger Zone
+                                  </h4>
+                                  <p className="text-red-600/80 text-sm mb-4 leading-relaxed">
+                                     Deleting your account is permanent and cannot be undone. All your data, including order history, saved outfits, and preferences will be permanently erased.
+                                  </p>
+                                  <button 
+                                    onClick={handleDeleteAccount}
+                                    className="w-full px-6 py-3 bg-white text-red-600 border border-red-200 rounded-xl text-base font-bold hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                  >
+                                    Delete My Account
+                                  </button>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                )}
+             </div>
+          </div>
+        </div>
+      </div>
+      </div>
       </main>
     </div>
   );

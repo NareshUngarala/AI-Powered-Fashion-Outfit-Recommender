@@ -55,16 +55,27 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
+    console.log('PUT /api/user/profile: Request received');
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      console.log('PUT /api/user/profile: Unauthorized (no session)');
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+      const bodySize = JSON.stringify(body).length;
+      console.log(`PUT /api/user/profile: Body parsed, size approx ${(bodySize / 1024).toFixed(2)} KB`);
+    } catch (parseError) {
+      console.error('PUT /api/user/profile: Error parsing JSON body:', parseError);
+      return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
+    }
+
     // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 

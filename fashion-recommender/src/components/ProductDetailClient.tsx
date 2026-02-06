@@ -115,14 +115,9 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
     try {
       const data = await generateOutfit();
       setOutfitData(data);
-      // Automatically select the first category if available
+      // Default to showing the full outfit (All items)
       if (data && data.items.length > 0) {
-        const cats = Array.from(new Set(data.items.map((item) => item.category)));
-        if (cats.length > 0) {
-          setSelectedCategory(cats[0] as string);
-        } else {
           setSelectedCategory('All');
-        }
       }
     } catch (error) {
       console.error('Failed to generate outfit:', error);
@@ -272,7 +267,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
                   
                   {/* Header */}
                   <div className="space-y-2">
-                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 font-serif leading-tight">{product.name}</h1>
+                    <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 leading-tight">{product.name}</h1>
                     <div className="flex items-center gap-3">
                       <p className="text-xl md:text-2xl font-medium text-gray-900">₹{product.price.toFixed(2)}</p>
                       <div className="h-6 w-px bg-gray-200"></div>
@@ -351,9 +346,12 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
                         <div>
                             <div className="text-xs font-bold text-green-600 uppercase tracking-widest mb-0.5 leading-none">AI Stylist</div>
                             {outfitData ? (
-                                <p className="text-sm text-gray-600 italic line-clamp-2 leading-tight">
-                                    {outfitData.styleAdvice}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
+                                    <p className="text-sm font-medium text-gray-900 leading-tight">
+                                        Outfit Generated
+                                    </p>
+                                </div>
                             ) : (
                                 <h2 className="text-base font-bold text-gray-900 leading-tight">Complete Outfit</h2>
                             )}
@@ -378,6 +376,17 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
                         </div>
                     ) : outfitData ? (
                         <div className="flex flex-col h-full">
+                            {/* Style Advice Section */}
+                            <div className="bg-green-50/50 p-3 rounded-xl border border-green-100 mb-3 flex-shrink-0">
+                                <h3 className="text-xs font-bold text-green-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                    <Sparkles className="w-3 h-3" />
+                                    Style Advice
+                                </h3>
+                                <p className="text-sm text-gray-700 leading-relaxed italic">
+                                    &quot;{outfitData.styleAdvice}&quot;
+                                </p>
+                            </div>
+
                             {/* Category Filter */}
                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar mb-1 flex-shrink-0">
                                 {categories.map((cat) => (

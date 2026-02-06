@@ -58,6 +58,8 @@ class UserModel(BaseModel):
     email: EmailStr
     password: str
     image: Optional[str] = None
+    gender: Optional[str] = "Unisex"
+    preferredStyle: Optional[str] = None
     role: str = "user"
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
@@ -70,6 +72,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     image: Optional[str] = None
+    gender: Optional[str] = "Unisex"
+    preferredStyle: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -164,6 +168,8 @@ class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     image: Optional[str] = None
+    gender: Optional[str] = None
+    preferredStyle: Optional[str] = None
 
 class PaymentMethodModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)

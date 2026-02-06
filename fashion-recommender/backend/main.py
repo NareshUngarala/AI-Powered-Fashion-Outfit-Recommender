@@ -2,6 +2,10 @@ import os
 import json
 import logging
 import random
+import base64
+import io
+import requests
+from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 from typing import List, Optional
 from pathlib import Path
@@ -430,13 +434,184 @@ class RecommendationResponse(BaseModel):
     explanation: str
     style_tips: Optional[List[str]] = None
 
+class GenerateLookRequest(BaseModel):
+    userId: str
+    items: List[dict]
+    mainProductId: str
+
+@app.post("/generate-look")
+async def generate_look(request: GenerateLookRequest):
+    logger.info(f"Generating look for user {request.userId} with {len(request.items)} items")
+    
+    # 1. Fetch User and Items
+    user = await user_collection.find_one({"_id": ObjectId(request.userId)})
+    main_product = await product_collection.find_one({"_id": ObjectId(request.mainProductId)})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # 2. Prepare User Description (Identity)
+    user_description = "a fashion model" # Default
+    if user.get("image"):
+        try:
+            # Use Gemini Vision to describe the user
+            # We need to download the image first or pass the URL if supported. 
+            # For 1.5 Flash, passing the image bytes is safest.
+            
+            # Helper to download image bytes
+            def get_image_bytes(url):
+                clean_url = url.strip().strip("`'\" ")
+                return requests.get(clean_url, timeout=5).content
+                
+            user_image_bytes = get_image_bytes(user["image"])
+            
+            # Analyze with Gemini 1.5 Flash
+            analyze_response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=[
+                    types.Part.from_bytes(data=user_image_bytes, mime_type="image/jpeg"), # Assuming jpeg, or detect
+                    "Describe this person's physical appearance (gender, age group, hair style/color, skin tone, facial hair if any) in one concise sentence to be used as a subject in a photo generation prompt. Do not describe the clothing."
+                ]
+            )
+            if analyze_response.text:
+                user_description = analyze_response.text.strip()
+                logger.info(f"User description: {user_description}")
+        except Exception as e:
+            logger.warning(f"Failed to analyze user image: {e}")
+            # Fallback to gender from profile
+            gender = user.get("gender", "Unisex")
+            user_description = "a handsome man" if gender == "Men" else "a beautiful woman" if gender == "Women" else "a fashion model"
+
+    # 3. Prepare Outfit Description
+    outfit_desc = []
+    if main_product:
+        outfit_desc.append(f"{main_product.get('color', '')} {main_product.get('name', 'product')}")
+    
+    for item in request.items:
+        outfit_desc.append(f"{item.get('color', '')} {item.get('name', '')}")
+        
+    outfit_prompt = ", ".join(outfit_desc)
+    
+    # 4. Generate Image with Imagen
+    full_prompt = (
+        f"A realistic full-body fashion photography shot of {user_description} wearing {outfit_prompt}. "
+        "The person is standing in a modern, well-lit studio or lifestyle setting. "
+        "High quality, 8k resolution, photorealistic, cinematic lighting."
+    )
+    logger.info(f"Imagen Prompt: {full_prompt}")
+    
+    try:
+        imagen_response = client.models.generate_images(
+            model='imagen-3.0-generate-001', # Using 3.0 as it is standard
+            prompt=full_prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images=1,
+                aspect_ratio="3:4"
+            )
+        )
+        
+        if imagen_response.generated_images:
+            image_bytes = imagen_response.generated_images[0].image.image_bytes
+            img_b64 = base64.b64encode(image_bytes).decode()
+            return {
+                "message": "Look generated successfully",
+                "imageUrl": f"data:image/jpeg;base64,{img_b64}"
+            }
+        else:
+            raise Exception("No images generated")
+            
+    except Exception as e:
+        logger.error(f"Imagen generation failed: {e}")
+        
+        # Fallback to Pillow Composition if AI fails
+        logger.info("Falling back to Pillow Composition")
+        
+        # Create Canvas (1200x800)
+        width, height = 1200, 800
+        canvas = Image.new('RGB', (width, height), (255, 255, 255))
+        draw = ImageDraw.Draw(canvas)
+        
+        # Background
+        draw.rectangle([0, 0, width, height], fill=(248, 249, 250))
+        
+        # 1. Place User Image (Left Side) - Need to fetch again or reuse if possible
+        # Re-fetching for safety in fallback block
+        user_img = None
+        try:
+             def download_image_pil_fallback(url):
+                try:
+                    clean_url = url.strip().strip("`'\" ")
+                    if not clean_url: return None
+                    response = requests.get(clean_url, timeout=5)
+                    response.raise_for_status()
+                    img = Image.open(io.BytesIO(response.content))
+                    return img.convert("RGBA")
+                except: return None
+                
+             if user and user.get("image"):
+                 user_img = download_image_pil_fallback(user["image"])
+        except: pass
+
+        if user_img:
+            u_width, u_height = user_img.size
+            aspect = u_width / u_height
+            target_h = height - 100
+            target_w = int(target_h * aspect)
+            if target_w > width * 0.45:
+                 target_w = int(width * 0.45)
+                 target_h = int(target_w / aspect)
+            user_resized = user_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            y_pos = (height - target_h) // 2
+            x_pos = 50
+            canvas.paste(user_resized, (x_pos, y_pos), user_resized if user_resized.mode == 'RGBA' else None)
+            draw.text((x_pos, y_pos - 30), "YOUR PROFILE", fill=(100, 100, 100))
+        else:
+            draw.rectangle([50, 100, 450, 700], fill=(220, 220, 220), outline=(200, 200, 200))
+            draw.text((150, 400), "No Profile Photo", fill=(150, 150, 150))
+            
+        # 2. Place Main Product
+        # Need to re-fetch main product image
+        main_product_img = None
+        if main_product and main_product.get("imageUrl"):
+             main_product_img = download_image_pil_fallback(main_product["imageUrl"])
+             
+        current_x = int(width * 0.55)
+        current_y = 50
+        if main_product_img:
+            main_product_img.thumbnail((350, 350), Image.Resampling.LANCZOS)
+            canvas.paste(main_product_img, (current_x, current_y), main_product_img if main_product_img.mode == 'RGBA' else None)
+            draw.text((current_x, current_y + 360), "SELECTED ITEM", fill=(0, 100, 0))
+            current_y += 400
+            
+        # 3. Accessories
+        item_x = current_x
+        for idx, item in enumerate(request.items[:4]):
+            item_url = item.get("image")
+            if item_url:
+                img = download_image_pil_fallback(item_url)
+                if img:
+                    img.thumbnail((180, 180), Image.Resampling.LANCZOS)
+                    x_offset = (idx % 2) * 200
+                    y_offset = (idx // 2) * 200
+                    canvas.paste(img, (item_x + x_offset, current_y + y_offset), img if img.mode == 'RGBA' else None)
+        
+        # Convert to Base64
+        buffered = io.BytesIO()
+        canvas.save(buffered, format="JPEG", quality=85)
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        
+        return {
+             "message": "AI Generation failed, falling back to composition.",
+             "imageUrl": f"data:image/jpeg;base64,{img_str}"
+        }
+
 @app.post("/recommend", response_model=RecommendationResponse)
 async def recommend_outfit(request: RecommendRequest):
     product = request.product
     occasion = request.occasion
     gender = request.gender
     
-    category = map_category(product.get("category", ""))
+    category = map_category(product.get("category") or "")
     
     # 1. Identify candidate categories based on actual DB content
     # DB Categories:
@@ -448,21 +623,29 @@ async def recommend_outfit(request: RecommendRequest):
     db_tops = ["T-Shirt", "Formal Shirt", "shirt", "Kurta", "Short Kurta", "Kurta Shirt"]
     db_bottoms = ["Jeans", "Chinos", "Joggers", "Formal Trousers"]
     db_outerwear = ["Jacket", "Blazer", "Bandhgala", "Bandhgala Jacket"]
+    db_shoes = ["Sneakers", "Loafers", "Formal Shoes", "Mojaris", "Boots"]
+    db_accessories = ["Watch", "Belt", "Sunglasses", "Bag", "Hat"]
     
     complementary_categories = []
-    
+    required_types = []
+
     if category == "Tops":
-        complementary_categories = db_bottoms + db_outerwear
+        complementary_categories = db_bottoms + db_shoes + db_accessories + db_outerwear
+        required_types = ["Bottom", "Footwear", "Accessory"]
     elif category == "Bottoms":
-        complementary_categories = db_tops + db_outerwear
+        complementary_categories = db_tops + db_shoes + db_accessories + db_outerwear
+        required_types = ["Top", "Footwear", "Accessory"]
     elif category == "Outerwear":
-        complementary_categories = db_tops + db_bottoms
+        complementary_categories = db_tops + db_bottoms + db_shoes + db_accessories
+        required_types = ["Top", "Bottom", "Footwear", "Accessory"]
     elif category == "FullBody":
-        # For sets, we can suggest outerwear or specific tops (like shirts for suits)
-        complementary_categories = db_outerwear + ["Formal Shirt"]
+        # For sets, we need shoes and accessories
+        complementary_categories = db_shoes + db_accessories + db_outerwear
+        required_types = ["Footwear", "Accessory"]
     else:
         # Default fallback
-        complementary_categories = db_tops + db_bottoms
+        complementary_categories = db_tops + db_bottoms + db_shoes + db_accessories
+        required_types = ["Top", "Bottom", "Footwear"]
     
     # 2. Fetch candidates from DB
     candidate_query = {"category": {"$in": complementary_categories}}
@@ -473,21 +656,22 @@ async def recommend_outfit(request: RecommendRequest):
         # For now, we'll just fetch broadly to ensure we have candidates.
         pass
 
-    candidate_docs = await product_collection.find(candidate_query).limit(40).to_list(40)
+    candidate_docs = await product_collection.find(candidate_query).limit(60).to_list(60)
     
     # If no candidates found, fallback to existing logic (which fetches specific categories)
     if not candidate_docs:
         # Fallback logic
         recommendations = []
         if category == "Tops":
-            bottoms = await product_collection.find({"category": {"$in": db_bottoms}}).limit(3).to_list(3)
-            recommendations.extend(bottoms)
+            bottoms = await product_collection.find({"category": {"$in": db_bottoms}}).limit(1).to_list(1)
+            shoes = await product_collection.find({"category": {"$in": db_shoes}}).limit(1).to_list(1)
+            acc = await product_collection.find({"category": {"$in": db_accessories}}).limit(1).to_list(1)
+            recommendations.extend(bottoms + shoes + acc)
         elif category == "Bottoms":
-            tops = await product_collection.find({"category": {"$in": db_tops}}).limit(3).to_list(3)
-            recommendations.extend(tops)
-        elif category == "Outerwear":
-            inner = await product_collection.find({"category": {"$in": db_tops}}).limit(2).to_list(2)
-            recommendations.extend(inner)
+            tops = await product_collection.find({"category": {"$in": db_tops}}).limit(1).to_list(1)
+            shoes = await product_collection.find({"category": {"$in": db_shoes}}).limit(1).to_list(1)
+            acc = await product_collection.find({"category": {"$in": db_accessories}}).limit(1).to_list(1)
+            recommendations.extend(tops + shoes + acc)
         else:
              # Try to find anything
             others = await product_collection.find({"category": {"$in": db_tops + db_bottoms}}).limit(3).to_list(3)
@@ -522,7 +706,11 @@ async def recommend_outfit(request: RecommendRequest):
         I have a list of candidate products:
         {candidate_list_str}
         
-        Please select 3-4 items from the candidate list that form a complete, stylish outfit with the main product for a '{occasion}' occasion for {gender}.
+        Your task is to create a SINGLE, COMPLETE outfit around the main product for a '{occasion}' occasion for {gender}.
+        
+        CRITICAL REQUIREMENT: You must select exactly ONE item from EACH of these missing types to complete the look: {', '.join(required_types)}.
+        For example, if the main product is a Top, you MUST select 1 Bottom, 1 Footwear, and 1 Accessory.
+        
         The outfit must be color-coordinated and appropriate for the occasion.
         
         Return ONLY a valid JSON object with this structure:
@@ -589,20 +777,22 @@ async def recommend_outfit(request: RecommendRequest):
 
 @app.post("/seed")
 async def seed_database(seed_data: SeedRequest):
-    # Clear existing data
+    # Clear existing data (except users to preserve custom accounts)
     await product_collection.delete_many({})
-    await user_collection.delete_many({})
+    # await user_collection.delete_many({}) # Preserving users
     await collection_collection.delete_many({})
     
-    # Insert Users
+    # Insert Users (only if not exists)
     if seed_data.users:
         for user in seed_data.users:
-            if "password" in user:
-                 user["password"] = get_password_hash(user["password"])
-            
-            user["createdAt"] = datetime.now()
-            user["updatedAt"] = datetime.now()
-            await user_collection.insert_one(user)
+            existing_user = await user_collection.find_one({"email": user.get("email")})
+            if not existing_user:
+                if "password" in user:
+                     user["password"] = get_password_hash(user["password"])
+                
+                user["createdAt"] = datetime.now()
+                user["updatedAt"] = datetime.now()
+                await user_collection.insert_one(user)
         
     # Insert Products
     if seed_data.products:

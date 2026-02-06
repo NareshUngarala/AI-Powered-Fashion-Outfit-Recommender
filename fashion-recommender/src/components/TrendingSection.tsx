@@ -69,7 +69,7 @@ export default function TrendingSection() {
         </Link>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map((product) => (
           <Link key={product._id} href={`/products/${product._id}`} className="group cursor-pointer">
             <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-100 relative mb-4">
