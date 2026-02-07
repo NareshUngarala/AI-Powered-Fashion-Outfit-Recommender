@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import { 
   SlidersHorizontal, 
@@ -11,6 +11,7 @@ import {
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
 import { PRODUCTS } from '@/data/products';
+import { useSearchParams } from 'next/navigation';
 
 // Extract unique categories from products
 const CATEGORIES = ['All', ...Array.from(new Set(PRODUCTS.map(p => p.category))).sort()];
@@ -22,10 +23,28 @@ const getCategoryImage = (category: string) => {
 };
 
 export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white font-sans text-gray-900">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    }>
+      <ShopPageContent />
+    </Suspense>
+  );
+}
+
+function ShopPageContent() {
+  const searchParams = useSearchParams();
+  const searchFromUrl = searchParams.get('search') || '';
   const [aiEnabled, setAiEnabled] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [products, setProducts] = useState(PRODUCTS);
+  const [products, setProducts] = useState<typeof PRODUCTS>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
 
   // Filter States
   const [selectedStyle, setSelectedStyle] = useState<string>('');
@@ -33,6 +52,11 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sync search from URL
+  useEffect(() => {
+    setSearchQuery(searchFromUrl);
+  }, [searchFromUrl]);
 
   // Fetch products from API with filters
   useEffect(() => {
@@ -42,6 +66,7 @@ export default function ShopPage() {
         const params = new URLSearchParams();
         
         if (selectedCategory && selectedCategory !== 'All') params.append('category', selectedCategory);
+        if (searchQuery.trim()) params.append('search', searchQuery.trim());
         
         const response = await fetch(`/api/products?${params.toString()}`);
         if (response.ok) {
@@ -66,12 +91,25 @@ export default function ShopPage() {
                 });
             }
 
+            // Client-side search filter (name, category, brand)
+            if (searchQuery.trim()) {
+                const q = searchQuery.trim().toLowerCase();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                fetchedProducts = fetchedProducts.filter((p: any) =>
+                    p.name?.toLowerCase().includes(q) ||
+                    p.category?.toLowerCase().includes(q) ||
+                    p.brand?.toLowerCase().includes(q) ||
+                    p.description?.toLowerCase().includes(q)
+                );
+            }
+
             setProducts(fetchedProducts); 
           }
         }
       } catch (error) {
         console.log('Using local mock data due to API error', error);
         // Fallback to local filtering if API fails
+        const q = searchQuery.trim().toLowerCase();
         const filtered = [...PRODUCTS].filter(p => {
             const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
             const matchStyle = !selectedStyle || p.style === selectedStyle;
@@ -81,7 +119,8 @@ export default function ShopPage() {
                 else if (selectedPriceRange === '₹1000 - ₹2500') matchPrice = p.price >= 1000 && p.price <= 2500;
                 else if (selectedPriceRange === 'Above ₹2500') matchPrice = p.price > 2500;
             }
-            return matchCategory && matchStyle && matchPrice;
+            const matchSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || (p.brand && p.brand.toLowerCase().includes(q));
+            return matchCategory && matchStyle && matchPrice && matchSearch;
         });
         setProducts(filtered);
       } finally {
@@ -95,10 +134,10 @@ export default function ShopPage() {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [selectedStyle, selectedPriceRange, selectedCategory]);
+  }, [selectedStyle, selectedPriceRange, selectedCategory, searchQuery]);
 
-  // AI Recommendation Logic for New York Weather (Cold/Winter)
-  const recommendedProducts = PRODUCTS.filter(p => {
+  // AI Recommendation Logic - memoized to avoid recalculation on every render
+  const recommendedProducts = useMemo(() => PRODUCTS.filter(p => {
     const searchString = (
       (p.tags?.join(' ') || '') + ' ' + 
       p.description + ' ' + 
@@ -107,15 +146,11 @@ export default function ShopPage() {
       p.category
     ).toLowerCase();
     
-    // Filter for Winter/Cold weather items (Jackets, Denim, Wool, Suits, Thick materials)
     const isWinterAppropriate = /jacket|coat|blazer|wool|denim|suit|sweatshirt|hoodie|thick/i.test(searchString);
-    
-    // Filter for "Style Profile" (Simulated as Trendy/Casual/Formal mix, excluding pure traditional unless fusion)
-    // For this demo, let's prioritize high match scores if they exist, or just general style
-    const isStyleMatch = p.match > 90; // Simulate "User Profile" match
+    const isStyleMatch = p.match > 90;
     
     return isWinterAppropriate && isStyleMatch;
-  }).slice(0, 4); // Show top 4
+  }).slice(0, 4), []); // Static data, compute once
 
   const toggleFilter = (setter: (val: string) => void, current: string, value: string) => {
     setter(current === value ? '' : value);

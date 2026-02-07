@@ -1,33 +1,38 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-100 pt-12 pb-8">
+    <footer className="bg-white border-t border-gray-100 pt-10 lg:pt-8 xl:pt-12 pb-6 lg:pb-6 xl:pb-8">
       <div className="w-full px-4 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-8 xl:gap-12">
           {/* Brand Column */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-               <div className="h-6 w-6 bg-green-400 rounded-sm flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">+</span>
-               </div>
+            <Link href="/" className="flex items-center gap-2">
+               <Image 
+                 src="/logo.png" 
+                 alt="Style Genie Logo" 
+                 width={28} 
+                 height={28} 
+                 className="h-7 w-7 object-contain"
+               />
                <span className="font-bold text-lg tracking-tight text-gray-900">STYLE GENIE</span>
-            </div>
+            </Link>
             <p className="text-gray-500 text-sm leading-relaxed">
               Redefining style through artificial intelligence. We help you find the perfect outfit for any occasion, tailored to your unique persona.
             </p>
             <div className="flex space-x-4">
-              <Link href="#" className="text-gray-400 hover:text-green-500 transition-colors">
+              <Link href="#" className="text-gray-400 hover:text-green-500 hover:scale-110 transition-all duration-200">
                 <Instagram className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-400 hover:text-green-500 transition-colors">
+              <Link href="#" className="text-gray-400 hover:text-green-500 hover:scale-110 transition-all duration-200">
                 <Twitter className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-400 hover:text-green-500 transition-colors">
+              <Link href="#" className="text-gray-400 hover:text-green-500 hover:scale-110 transition-all duration-200">
                 <Facebook className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-400 hover:text-green-500 transition-colors">
+              <Link href="#" className="text-gray-400 hover:text-green-500 hover:scale-110 transition-all duration-200">
                 <Linkedin className="h-5 w-5" />
               </Link>
             </div>
@@ -66,7 +71,7 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="mt-12 border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="mt-8 lg:mt-6 xl:mt-10 border-t border-gray-100 pt-6 lg:pt-5 xl:pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-xs">
             &copy; {new Date().getFullYear()} Style Genie. All rights reserved.
           </p>

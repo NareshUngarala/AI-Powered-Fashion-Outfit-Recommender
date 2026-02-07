@@ -39,7 +39,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
   // Initialize selected items when recommendation changes
   useEffect(() => {
     if (recommendation?.items) {
-      const allIds = new Set(recommendation.items.map((item: OutfitItem) => item.id));
+      const allIds = new Set<string>(recommendation.items.map((item: OutfitItem) => item.id));
       setSelectedItemIds(allIds);
     }
   }, [recommendation]);
@@ -81,6 +81,11 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
     
     if (selectedItems.length === 0) {
       alert("Please select at least one item for the look");
+      return;
+    }
+
+    if (!product?._id) {
+      alert("Product data is not available. Please try again.");
       return;
     }
     
@@ -156,6 +161,10 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
   };
 
   const handleSave = async () => {
+    if (!product?._id) {
+      alert("Product data is not available.");
+      return;
+    }
     setIsSaving(true);
     try {
       const response = await fetch('/api/outfits', {
@@ -163,7 +172,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mainProductId: product._id,
-          name: `${activeTab} Outfit for ${product.name}`,
+          name: `${activeTab} Outfit for ${product?.name || 'Product'}`,
           items: items.map(item => ({
              category: item.category,
              name: item.name,
@@ -266,29 +275,29 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
           </div>
 
           {/* Footer Actions */}
-          <div className="px-6 py-4 border-t border-gray-100 bg-white flex items-center justify-between gap-4">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span className="font-semibold text-gray-900">Total: ₹{totalPrice.toFixed(2)}</span>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
               <button 
                 onClick={() => { setShowLookPopup(false); setGeneratedLookUrl(null); }}
-                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 transition-all"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Try Again
               </button>
               <button 
                 onClick={handleDownloadLook}
-                className="px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 transition-all"
               >
-                <Download className="w-4 h-4" />
-                Save Image
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                Save
               </button>
               <button 
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 transition-all disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save Outfit'}
               </button>
@@ -298,9 +307,9 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                     handleUpdateCart(item, 1);
                   });
                 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-green-200 transition-all transform active:scale-95"
+                className="px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 shadow-lg shadow-green-200 transition-all transform active:scale-95"
               >
-                <ShoppingBag className="w-4 h-4" />
+                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Buy All
               </button>
             </div>
@@ -320,7 +329,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-7xl bg-white rounded-2xl shadow-2xl overflow-y-auto flex flex-col max-h-[95vh]">
+      <div className="relative w-full max-w-7xl mx-4 bg-white rounded-2xl shadow-2xl overflow-y-auto flex flex-col max-h-[95vh]">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10 relative">
@@ -474,7 +483,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-3 border-t border-gray-100 bg-white flex items-center justify-between gap-4">
+            <div className="px-4 sm:px-5 py-3 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
               
               {/* Generating Look Loading State */}
               {isGeneratingLook && (
@@ -484,15 +493,15 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
-                  <span className="text-sm font-medium">AI is creating your look with real product images... This may take 1-2 minutes</span>
+                  <span className="text-xs sm:text-sm font-medium">AI is creating your look... This may take 1-2 minutes</span>
                 </div>
               )}
 
-              <div className="flex gap-3 ml-auto">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3 ml-auto">
                 <button 
                   onClick={handleGetLook}
                   disabled={isGeneratingLook || selectedItemIds.size === 0}
-                  className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all transform active:scale-95 disabled:opacity-50 ${
+                  className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all transform active:scale-95 disabled:opacity-50 ${
                     selectedItemIds.size > 0 
                       ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -506,7 +515,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                   ) : (
                     <>
                       <Wand2 className="w-4 h-4" />
-                      Get Look ({selectedItemIds.size} items)
+                      Get Look ({selectedItemIds.size})
                     </>
                   )}
                 </button>
@@ -514,7 +523,7 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-8 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
+                  className="px-4 sm:px-8 py-2.5 sm:py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
                 >
                   {isSaving ? 'Saving...' : 'Save Look'}
                 </button>
@@ -524,9 +533,9 @@ export default function OutfitGeneratorModal({ isOpen, onClose, product, recomme
                       handleUpdateCart(item, 1);
                     });
                   }}
-                  className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-all transform active:scale-95"
+                  className="px-4 sm:px-8 py-2.5 sm:py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-all transform active:scale-95"
                 >
-                  <ShoppingBag className="w-5 h-5" />
+                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                   Buy All
                 </button>
               </div>

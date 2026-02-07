@@ -15,10 +15,9 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/outfits/${id}?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/outfits/${id}?userId=${userId}`, {
         method: 'DELETE',
     });
 

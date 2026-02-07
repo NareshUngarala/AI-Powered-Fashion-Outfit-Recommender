@@ -45,6 +45,78 @@ summary,
   }
 }
 
+/* ===== Minimal Animations ===== */
+
+/* Fade in + slide up — used on scroll-reveal sections */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in only — for auth forms, overlays */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Subtle scale in — for cards entering view */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Scroll-reveal: elements start invisible, animate when .is-visible is added */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children — add delay per child via nth-child */
+.stagger-children > .animate-on-scroll:nth-child(1) { transition-delay: 0ms; }
+.stagger-children > .animate-on-scroll:nth-child(2) { transition-delay: 80ms; }
+.stagger-children > .animate-on-scroll:nth-child(3) { transition-delay: 160ms; }
+.stagger-children > .animate-on-scroll:nth-child(4) { transition-delay: 240ms; }
+.stagger-children > .animate-on-scroll:nth-child(5) { transition-delay: 320ms; }
+.stagger-children > .animate-on-scroll:nth-child(6) { transition-delay: 400ms; }
+.stagger-children > .animate-on-scroll:nth-child(7) { transition-delay: 480ms; }
+.stagger-children > .animate-on-scroll:nth-child(8) { transition-delay: 560ms; }
+
+/* Page entrance animation */
+.animate-page-enter {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+/* Form entrance animation */
+.animate-form-enter {
+  animation: scaleIn 0.4s ease-out both;
+}
+
+/* Subtle hover lift for interactive cards */
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
+}
+
 /* Modern Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;

@@ -49,10 +49,11 @@ export const authOptions: NextAuthOptions = {
             }
 
             return user;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Auth error:", error);
+            const err = error as Error & { cause?: { code?: string } };
             // Throw specific error for connection issues so user knows to check backend
-            if (error.message.includes('fetch failed') || (error.cause && error.cause.code === 'ECONNREFUSED')) {
+            if (err.message?.includes('fetch failed') || err.cause?.code === 'ECONNREFUSED') {
                 throw new Error("Connection failed: Backend server unreachable. Is it running on port 8000?");
             }
             return null;
@@ -66,14 +67,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (token && session.user) {
-        // @ts-expect-error: session.user type is extended dynamically
         session.user.id = token.id as string;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        // @ts-expect-error: user type from backend includes _id
         token.id = user.id || user._id;
       }
       return token;

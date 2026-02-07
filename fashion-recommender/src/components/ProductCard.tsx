@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles, Plus, Heart } from 'lucide-react';
@@ -8,7 +8,7 @@ import { Product } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 
-export default function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product }: { product: Product }) {
   const { addToCart, setIsCartOpen } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [showScore, setShowScore] = useState(false);
@@ -48,6 +48,7 @@ export default function ProductCard({ product }: { product: Product }) {
             src={product.imageUrl}
             alt={product.name}
             fill
+            loading="lazy"
             className="object-contain group-hover:scale-105 transition-transform duration-700"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
@@ -124,3 +125,5 @@ export default function ProductCard({ product }: { product: Product }) {
     </Link>
   );
 }
+
+export default memo(ProductCard);

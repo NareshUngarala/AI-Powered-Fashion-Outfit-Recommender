@@ -11,6 +11,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 import { Providers } from "./providers";
@@ -27,6 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* DNS prefetch for faster external image resolution */}
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://m.media-amazon.com" />
+        <link rel="dns-prefetch" href="https://images.pexels.com" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+      </head>
       <body
         className={`${plusJakartaSans.variable} ${geistMono.variable} antialiased`}
       >

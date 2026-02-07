@@ -13,7 +13,6 @@ export async function GET() {
       );
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     
     if (!userId || userId === 'undefined') {
@@ -25,7 +24,7 @@ export async function GET() {
     }
 
     console.log(`Fetching profile for userId: ${userId}`);
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/profile/${userId}`);
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/user/profile/${userId}`);
     
     if (response.status === 404) {
       return NextResponse.json(
@@ -76,10 +75,9 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/profile/${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/user/profile/${userId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

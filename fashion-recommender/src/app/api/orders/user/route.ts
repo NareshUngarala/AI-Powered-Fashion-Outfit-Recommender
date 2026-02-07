@@ -6,15 +6,13 @@ import { authOptions } from '@/lib/auth';
 export async function GET(_req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-expect-error: Session user type gap
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/orders/user/${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/orders/user/${userId}`, {
         cache: 'no-store'
     });
 

@@ -10,10 +10,9 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/payments?userId=${userId}`);
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/user/payments?userId=${userId}`);
 
     if (!response.ok) {
         throw new Error(`Python backend error: ${response.statusText}`);
@@ -42,10 +41,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/payments?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/user/payments?userId=${userId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -80,10 +78,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ message: 'Payment method ID required' }, { status: 400 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/payments/${id}?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/user/payments/${id}?userId=${userId}`, {
         method: 'DELETE',
     });
 

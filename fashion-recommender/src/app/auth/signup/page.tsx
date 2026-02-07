@@ -84,7 +84,7 @@ export default function SignUp() {
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2">
            <Image 
-             src="/logo.jpg" 
+             src="/logo.png" 
              alt="Style Genie Logo" 
              width={40} 
              height={40} 
@@ -94,7 +94,7 @@ export default function SignUp() {
         </div>
 
         {/* Hero Text */}
-        <div className="relative z-10 max-w-xl">
+        <div className="relative z-10 max-w-xl animate-page-enter">
           <h1 className="text-5xl font-medium leading-tight mb-4">
             Join the Fashion Revolution.
           </h1>
@@ -104,22 +104,22 @@ export default function SignUp() {
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 flex justify-between text-xs text-gray-300 w-full max-w-md">
+        <div className="relative z-10 flex justify-between text-xs text-gray-400">
           <p>&copy; {new Date().getFullYear()} Style Genie Inc.</p>
           <div className="flex gap-4">
-             <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-             <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
 
       {/* Right Side - Signup Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-6 sm:p-8 lg:px-16 lg:py-4">
-        <div className="max-w-md w-full">
+        <div className="max-w-md w-full animate-form-enter">
           {/* Mobile Logo/Branding */}
           <div className="lg:hidden flex items-center gap-2 mb-6 justify-center">
             <Image 
-              src="/logo.jpg" 
+              src="/logo.png" 
               alt="Style Genie Logo" 
               width={32} 
               height={32} 

@@ -76,7 +76,7 @@ export default function WishlistDrawer() {
 
         {/* Drawer Panel */}
         <div 
-          className={`relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${
+          className={`relative w-full max-w-[90vw] sm:max-w-[420px] bg-white h-full shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${
             isWishlistOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
@@ -142,7 +142,7 @@ export default function WishlistDrawer() {
                               </p>
                             )}
                             <h3 className="font-medium text-gray-900 line-clamp-2 leading-snug">
-                              <Link href={`/shop/${item._id}`} onClick={() => setIsWishlistOpen(false)}>
+                              <Link href={`/products/${item._id}`} onClick={() => setIsWishlistOpen(false)}>
                                 {item.name}
                               </Link>
                             </h3>
@@ -155,7 +155,7 @@ export default function WishlistDrawer() {
                           </button>
                         </div>
                         <p className="text-sm font-semibold text-gray-900 mt-2">
-                          ${item.price.toFixed(2)}
+                          ₹{item.price.toFixed(2)}
                         </p>
                       </div>
 

@@ -2,8 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, RefreshCw, Check } from 'lucide-react';
+import Link from 'next/link';
+import { 
+  ShoppingBag, 
+  RefreshCw, 
+  Check, 
+  Sparkles, 
+  Shuffle, 
+  AlertCircle,
+  ArrowRight,
+  Lock
+} from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Navbar from './Navbar';
 
 interface Product {
   _id: string;
@@ -15,15 +28,22 @@ interface Product {
 }
 
 interface RecommendationItem {
+  _id?: string;
+  id?: string;
   category: string;
   name: string;
   color: string;
   reason: string;
+  price?: number;
+  image?: string;
+  imageUrl?: string;
 }
 
 interface OutfitRecommendation {
   items: RecommendationItem[];
   styleAdvice: string;
+  style_tips?: string[];
+  description?: string;
 }
 
 interface StylistClientProps {
@@ -33,182 +53,394 @@ interface StylistClientProps {
 type ContextType = 'Casual' | 'Office' | 'Party' | 'Street';
 
 export default function StylistClient({ initialProduct }: StylistClientProps) {
-  const [activeContext, setActiveContext] = useState<ContextType>('Office');
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [product, setProduct] = useState<Product>(initialProduct);
+  const [activeContext, setActiveContext] = useState<ContextType>('Casual');
   const [isLoading, setIsLoading] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
   const [recommendation, setRecommendation] = useState<OutfitRecommendation | null>(null);
+  const [error, setError] = useState('');
+  const [userGender, setUserGender] = useState('Unisex');
+  const [userStyle, setUserStyle] = useState('');
   const { addToCart } = useCart();
+  const [isAdded, setIsAdded] = useState(false);
 
-  // Mock recent generations for the footer
-  const recentGenerations = [
-    'bg-teal-200', 'bg-yellow-200', 'bg-emerald-200', 'bg-cyan-200'
-  ];
+  // Fetch user profile to get gender and style preferences
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (status === 'authenticated') {
+        try {
+          const res = await fetch('/api/user/profile');
+          const data = await res.json();
+          if (data.success && data.data) {
+            if (data.data.gender) setUserGender(data.data.gender);
+            if (data.data.preferredStyle) setUserStyle(data.data.preferredStyle);
+          }
+        } catch (err) {
+          console.error('Failed to fetch user profile:', err);
+        }
+      }
+    };
+    fetchProfile();
+  }, [status]);
 
   const handleGenerate = useCallback(async () => {
     setIsLoading(true);
+    setError('');
     try {
       const res = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          product: initialProduct,
+          product,
           occasion: activeContext,
-          gender: 'Unisex' // Default for now, could be dynamic
+          gender: userGender,
+          preferredStyle: userStyle
         }),
       });
+
+      if (!res.ok) {
+        throw new Error('Failed to get recommendations');
+      }
+
       const data = await res.json();
-      setRecommendation(data);
-    } catch (error) {
-      console.error('Failed to generate outfit:', error);
+      
+      // Normalize the response - handle both Python backend and direct formats
+      const normalized: OutfitRecommendation = {
+        items: (data.items || []).map((item: RecommendationItem) => ({
+          ...item,
+          id: item._id || item.id,
+          image: item.imageUrl || item.image,
+          price: item.price || 0,
+        })),
+        styleAdvice: data.style_tips 
+          ? data.style_tips.join(' ') 
+          : (data.styleAdvice || data.description || ''),
+      };
+
+      setRecommendation(normalized);
+    } catch (err) {
+      console.error('Failed to generate outfit:', err);
+      setError('Failed to generate outfit recommendations. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [activeContext, initialProduct]);
+  }, [activeContext, product, userGender, userStyle]);
 
+  // Generate on first load and when context changes
   useEffect(() => {
-    handleGenerate();
-  }, [handleGenerate]);
+    if (status === 'authenticated') {
+      handleGenerate();
+    }
+  }, [handleGenerate, status]);
 
-  const [isAdded, setIsAdded] = useState(false);
-
-  const handleAddToCart = () => {
-    // Add main product
-    addToCart({
-      id: initialProduct._id,
-      name: initialProduct.name,
-      price: initialProduct.price,
-      image: initialProduct.imageUrl,
-    });
-    
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+  // Shuffle to a different random product
+  const handleShuffle = async () => {
+    setIsShuffling(true);
+    setError('');
+    setRecommendation(null);
+    try {
+      const res = await fetch('/api/products/random');
+      if (!res.ok) throw new Error('Failed to fetch new product');
+      const newProduct = await res.json();
+      if (newProduct && newProduct._id) {
+        setProduct(newProduct);
+      }
+    } catch (err) {
+      console.error('Failed to shuffle product:', err);
+      setError('Failed to load a new product. Please try again.');
+    } finally {
+      setIsShuffling(false);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-[#0f111a] text-white p-6 md:p-12 font-sans">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* Header */}
-        <div className="text-center mb-12 space-y-2">
-          <div className="inline-block px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs font-bold tracking-wider mb-4">
-            AI PERSONAL STYLIST
+  // Add ALL items to cart (main product + recommended items)
+  const handleAddAllToCart = () => {
+    // Add main product
+    addToCart({
+      id: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.imageUrl,
+      size: 'M',
+      color: 'Standard',
+      brand: 'Fashion Brand',
+    });
+
+    // Add recommended items that have valid data
+    if (recommendation?.items) {
+      recommendation.items.forEach((item) => {
+        if (item.id && item.price && item.price > 0) {
+          addToCart({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image || item.imageUrl || '',
+            size: 'M',
+            color: item.color || 'Standard',
+            brand: 'Fashion Brand',
+          });
+        }
+      });
+    }
+
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2500);
+  };
+
+  // Not signed in
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+        <Navbar />
+        <main className="max-w-lg mx-auto px-4 py-20 text-center">
+          <div className="w-16 h-16 bg-white rounded-full inline-flex items-center justify-center mb-5 shadow-sm border border-gray-100">
+            <Lock className="w-7 h-7 text-gray-300" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            AI STYLED OUTFIT <span className="text-blue-500 italic">FOR YOU</span>
-          </h1>
-          <p className="text-gray-400 text-sm max-w-lg mx-auto mt-4">
-            Our neural network analyzed 5,000+ trends to match your aesthetic preferences and current climate.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In Required</h2>
+          <p className="text-gray-400 text-sm mb-6">Please sign in to access the AI Stylist and get personalized outfit recommendations.</p>
+          <button
+            onClick={() => router.push('/auth/signin')}
+            className="inline-flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-semibold text-sm transition-all shadow-lg shadow-green-600/20"
+          >
+            Sign In to Continue
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  // Loading session
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-950 font-sans text-white overflow-hidden">
+      <Navbar />
+
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 min-h-0 flex flex-col">
+
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-3 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-600/20 rounded-full">
+              <Sparkles className="w-3 h-3 text-green-400" />
+              <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">AI Personal Stylist</span>
+            </div>
+            <h1 className="text-base font-bold tracking-tight hidden sm:block">Your AI-Curated Outfit</h1>
+          </div>
+          <button
+            onClick={handleShuffle}
+            disabled={isShuffling}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-medium rounded-full transition-all disabled:opacity-50"
+          >
+            <Shuffle className={`w-3.5 h-3.5 ${isShuffling ? 'animate-spin' : ''}`} />
+            {isShuffling ? 'Loading...' : 'Try Different Product'}
+          </button>
         </div>
 
-        {/* Main Content Card */}
-        <div className="bg-[#1a1d2d] rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative group">
-          
-          {/* Tag */}
-          <div className="absolute top-6 left-6 z-10">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-              <span className="text-xs font-bold tracking-wide text-white">PERFECT MATCH</span>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-400 flex-shrink-0">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+          {/* Left: Product Card */}
+          <div className="w-full lg:w-[55%] min-h-0">
+            <div className="bg-white/[0.04] rounded-2xl border border-white/[0.08] overflow-hidden h-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
+                {/* Image */}
+                <div className="relative aspect-[4/3] md:aspect-auto bg-gray-800">
+                  <Image
+                    src={product.imageUrl}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-gray-950/80" />
+                  {/* Tag */}
+                  <div className="absolute top-3 left-3 z-10">
+                    <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-[9px] font-bold tracking-wide">AI MATCH</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Info + Controls */}
+                <div className="p-4 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[9px] font-bold text-green-400 uppercase tracking-widest mb-0.5">{product.category}</p>
+                    <h2 className="text-base font-bold mb-1 leading-tight">{product.name}</h2>
+                    <p className="text-gray-400 text-[11px] leading-relaxed mb-2 line-clamp-2">{product.description}</p>
+                    <p className="text-lg font-bold text-white">₹{product.price.toFixed(2)}</p>
+                  </div>
+
+                  <div className="mt-3 space-y-3">
+                    {/* Occasion Selector */}
+                    <div>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Select Occasion</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(['Casual', 'Office', 'Party', 'Street'] as ContextType[]).map((ctx) => (
+                          <button
+                            key={ctx}
+                            onClick={() => setActiveContext(ctx)}
+                            className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
+                              activeContext === ctx
+                                ? 'bg-green-600 border-green-600 text-white shadow-lg shadow-green-600/20'
+                                : 'bg-transparent border-white/10 text-gray-400 hover:border-white/25'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1">
+                              {activeContext === ctx && <Check className="w-2.5 h-2.5" />}
+                              {ctx}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* User preferences indicator */}
+                    {(userGender !== 'Unisex' || userStyle) && (
+                      <div className="flex items-center gap-1.5 text-[9px] text-gray-500">
+                        <Sparkles className="w-2.5 h-2.5 text-green-500" />
+                        <span>Personalized for: {userGender}{userStyle ? ` · ${userStyle}` : ''}</span>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleGenerate}
+                        disabled={isLoading}
+                        className="px-3 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-all flex items-center justify-center gap-1.5 text-xs font-medium"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+                        {isLoading ? 'Styling...' : 'Regenerate'}
+                      </button>
+                      <button
+                        onClick={handleAddAllToCart}
+                        disabled={isAdded}
+                        className={`px-3 py-2 rounded-xl text-white transition-all flex items-center justify-center gap-1.5 text-xs font-bold ${
+                          isAdded
+                            ? 'bg-green-600'
+                            : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20'
+                        }`}
+                      >
+                        {isAdded ? (
+                          <>
+                            <Check className="w-3 h-3" />
+                            Added!
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-3 h-3" />
+                            Add All to Cart
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-0">
-             {/* Image Section */}
-            <div className="relative h-[500px] md:h-auto bg-gray-800">
-               <Image 
-                 src={initialProduct.imageUrl} 
-                 alt={initialProduct.name}
-                 fill
-                 className="object-cover"
-                 priority
-               />
-               {/* Overlay Gradient */}
-               <div className="absolute inset-0 bg-gradient-to-t from-[#1a1d2d] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#1a1d2d]"></div>
-            </div>
-
-            {/* Controls Section */}
-            <div className="p-8 md:p-12 flex flex-col justify-end relative">
-              
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2">{initialProduct.name}</h2>
-                <p className="text-gray-400 italic text-sm mb-4">
-                  Vibe: {recommendation?.styleAdvice ? recommendation.styleAdvice.slice(0, 40) + '...' : 'Analyzing...'}
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">₹{initialProduct.price}</span>
-                  <span className="text-blue-400 text-xs font-bold">SAVE 15% AS BUNDLE</span>
+          {/* Right: AI Recommendations */}
+          <div className="w-full lg:w-[45%] flex flex-col gap-3 min-h-0">
+            {/* Style Advice Card */}
+            {recommendation?.styleAdvice && (
+              <div className="bg-green-500/[0.06] border border-green-500/15 rounded-2xl p-3 flex-shrink-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-3.5 h-3.5 text-green-400" />
+                  <h3 className="text-[10px] font-bold text-green-400 uppercase tracking-wider">AI Style Advice</h3>
                 </div>
+                <p className="text-xs text-gray-300 leading-relaxed italic line-clamp-3">
+                  &ldquo;{recommendation.styleAdvice}&rdquo;
+                </p>
+              </div>
+            )}
+
+            {/* Recommended Items */}
+            <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-3 flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-2 flex-shrink-0">
+                <h3 className="text-xs font-bold text-white">Complete Your Look</h3>
+                {recommendation?.items && recommendation.items.length > 0 && (
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">{recommendation.items.length} pieces</span>
+                )}
               </div>
 
-              {/* Context Selector */}
-              <div className="mb-8">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Select Context</p>
-                <div className="flex flex-wrap gap-3">
-                  {(['Casual', 'Office', 'Party', 'Street'] as ContextType[]).map((ctx) => (
-                    <button
-                      key={ctx}
-                      onClick={() => setActiveContext(ctx)}
-                      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 border ${
-                        activeContext === ctx 
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' 
-                          : 'bg-transparent border-gray-700 text-gray-400 hover:border-gray-500'
-                      }`}
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center flex-1 text-gray-500">
+                  <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-2" />
+                  <p className="text-[11px] font-medium">AI is creating your outfit...</p>
+                </div>
+              ) : recommendation?.items && recommendation.items.length > 0 ? (
+                <div className="space-y-2 flex-1 overflow-y-auto pr-1 hide-scrollbar">
+                  {recommendation.items.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="flex gap-2.5 p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all group"
                     >
-                      <div className="flex items-center gap-2">
-                        {activeContext === ctx && <Check className="w-3 h-3" />}
-                        {ctx}
+                      {/* Item image */}
+                      {item.image ? (
+                        <div className="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 relative bg-gray-800">
+                          <Image src={item.image} alt={item.name} fill className="object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg flex-shrink-0 bg-white/[0.05] flex items-center justify-center">
+                          <ShoppingBag className="w-4 h-4 text-gray-600" />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-bold text-green-400 uppercase tracking-wider">{item.category}</p>
+                            <h4 className="text-xs font-semibold text-white truncate">{item.name}</h4>
+                          </div>
+                          {item.price && item.price > 0 && (
+                            <span className="text-xs font-bold text-white flex-shrink-0">₹{item.price.toFixed(2)}</span>
+                          )}
+                        </div>
+                        {item.color && (
+                          <p className="text-[10px] text-gray-500">Color: {item.color}</p>
+                        )}
+                        {item.reason && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-snug line-clamp-1 italic">{item.reason}</p>
+                        )}
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
-              </div>
+              ) : !error ? (
+                <div className="flex flex-col items-center justify-center flex-1 text-gray-500">
+                  <Sparkles className="w-6 h-6 text-gray-600 mb-2" />
+                  <p className="text-[11px] font-medium">No recommendations yet</p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">Select an occasion and click Regenerate</p>
+                </div>
+              ) : null}
+            </div>
 
-              {/* Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button 
-                  onClick={handleGenerate}
-                  disabled={isLoading}
-                  className="px-6 py-4 rounded-xl border border-gray-700 text-white hover:bg-white/5 transition-colors flex items-center justify-center gap-2 font-medium group"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-                  {isLoading ? 'Styling...' : 'Try Another Style'}
-                </button>
-                
-                <button 
-                  onClick={handleAddToCart}
-                  disabled={isAdded}
-                  className={`px-6 py-4 rounded-xl text-white transition-all shadow-[0_4px_20px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 font-bold ${
-                    isAdded ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  {isAdded ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      Added to Cart
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4" />
-                      Add All to Cart
-                    </>
-                  )}
-                </button>
-              </div>
-
+            {/* Quick tip */}
+            <div className="flex items-center gap-1.5 px-1 text-[9px] text-gray-600 flex-shrink-0">
+              <Sparkles className="w-2.5 h-2.5 text-green-600 flex-shrink-0" />
+              <span>Recommendations powered by Google Gemini AI based on your preferences and selected occasion.</span>
             </div>
           </div>
         </div>
-
-        {/* Footer: Recently Generated */}
-        <div className="mt-16">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-6">Recently Generated</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {recentGenerations.map((color, i) => (
-              <div key={i} className={`aspect-square rounded-3xl ${color} opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}></div>
-            ))}
-          </div>
-        </div>
-
-      </div>
+      </main>
     </div>
   );
 }

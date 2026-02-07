@@ -8,16 +8,14 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-expect-error: Session user type gap
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/orders/${id}?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/orders/${id}?userId=${userId}`, {
         cache: 'no-store'
     });
 

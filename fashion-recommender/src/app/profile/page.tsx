@@ -477,10 +477,11 @@ export default function ProfilePage() {
             <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-green-600 to-emerald-600" />
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-soft-light" />
             
-            <div className="relative z-10 p-5 md:p-6 flex flex-col md:flex-row items-center md:items-end gap-5">
-               <div className="relative group">
-                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 bg-white/20 backdrop-blur-sm">
-                     <div className="w-full h-full rounded-full overflow-hidden border-2 md:border-4 border-white/90 relative bg-gray-200 shadow-xl">
+            <div className="relative z-10 px-5 py-4 md:px-6 md:py-4 flex items-center gap-4 md:gap-5">
+               {/* Profile Image */}
+               <div className="relative group flex-shrink-0">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-0.5 bg-white/20 backdrop-blur-sm">
+                     <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/90 relative bg-gray-200 shadow-xl">
                         <Image 
                           src={getValidImageUrl(profile.image || '', "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200")} 
                           alt={profile.name} 
@@ -492,40 +493,41 @@ export default function ProfilePage() {
                   </div>
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="absolute bottom-0 right-0 bg-white text-gray-900 p-2 rounded-full shadow-lg hover:bg-gray-100 hover:scale-105 transition-all"
+                    className="absolute -bottom-0.5 -right-0.5 bg-white text-gray-900 p-1.5 rounded-full shadow-lg hover:bg-gray-100 hover:scale-105 transition-all"
                   >
-                     <Camera className="w-4 h-4" />
+                     <Camera className="w-3 h-3" />
                   </button>
                </div>
                
-               <div className="text-center md:text-left flex-1 mb-1">
-                  <h1 className="text-xl md:text-3xl font-bold text-white mb-1 tracking-tight">{profile.name}</h1>
-                  <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-white/90 text-sm font-medium">
-                     <p className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
+               {/* Name + Email + Member Since */}
+               <div className="flex-1 min-w-0">
+                  <h1 className="text-lg md:text-xl font-bold text-white tracking-tight truncate">{profile.name}</h1>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
+                     <p className="flex items-center gap-1.5 text-white/90 text-xs font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]"></span>
                         {profile.email}
                      </p>
-                     <span className="hidden md:block w-1 h-1 bg-white/30 rounded-full" />
-                     <p className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 text-xs">
-                        <Clock className="w-3.5 h-3.5" /> Member since {new Date(profile.createdAt).getFullYear()}
+                     <p className="hidden sm:flex items-center gap-1.5 bg-white/10 px-2.5 py-0.5 rounded-full backdrop-blur-md border border-white/10 text-[11px] text-white/80 font-medium">
+                        <Clock className="w-3 h-3" /> Member since {new Date(profile.createdAt).getFullYear()}
                      </p>
                   </div>
                </div>
 
-               <div className="flex gap-5 bg-white/10 p-3 rounded-xl backdrop-blur-md border border-white/10">
-                  <div className="text-center px-4">
-                     <p className="text-2xl font-bold text-white">{orders.length}</p>
-                     <p className="text-sm text-white/80 uppercase tracking-widest font-bold">Orders</p>
+               {/* Stats */}
+               <div className="flex items-center gap-0 bg-white/10 rounded-xl backdrop-blur-md border border-white/10 flex-shrink-0">
+                  <div className="text-center px-3 md:px-5 py-2">
+                     <p className="text-lg md:text-xl font-bold text-white leading-tight">{orders.length}</p>
+                     <p className="text-[10px] md:text-xs text-white/70 uppercase tracking-wider font-bold">Orders</p>
                   </div>
-                  <div className="w-px bg-white/10" />
-                  <div className="text-center px-4">
-                     <p className="text-2xl font-bold text-white">{outfits.length}</p>
-                     <p className="text-sm text-white/80 uppercase tracking-widest font-bold">Looks</p>
+                  <div className="w-px h-8 bg-white/10" />
+                  <div className="text-center px-3 md:px-5 py-2">
+                     <p className="text-lg md:text-xl font-bold text-white leading-tight">{outfits.length}</p>
+                     <p className="text-[10px] md:text-xs text-white/70 uppercase tracking-wider font-bold">Looks</p>
                   </div>
-                  <div className="w-px bg-white/10" />
-                  <div className="text-center px-4">
-                     <p className="text-2xl font-bold text-white">{wishlist.length}</p>
-                     <p className="text-sm text-white/80 uppercase tracking-widest font-bold">Saved</p>
+                  <div className="w-px h-8 bg-white/10" />
+                  <div className="text-center px-3 md:px-5 py-2">
+                     <p className="text-lg md:text-xl font-bold text-white leading-tight">{wishlist.length}</p>
+                     <p className="text-[10px] md:text-xs text-white/70 uppercase tracking-wider font-bold">Saved</p>
                   </div>
                </div>
             </div>

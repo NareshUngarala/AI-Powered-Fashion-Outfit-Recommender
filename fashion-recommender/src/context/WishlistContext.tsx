@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 export interface WishlistItem {
@@ -116,21 +116,25 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isInWishlist = (productId: string) => {
+  const isInWishlist = useCallback((productId: string) => {
     return items.some(item => item._id === productId);
-  };
+  }, [items]);
+
+  const wishlistCount = useMemo(() => items.length, [items]);
+
+  const contextValue = useMemo(() => ({
+    items,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    isLoading,
+    isWishlistOpen,
+    setIsWishlistOpen,
+    wishlistCount
+  }), [items, addToWishlist, removeFromWishlist, isInWishlist, isLoading, isWishlistOpen, setIsWishlistOpen, wishlistCount]);
 
   return (
-    <WishlistContext.Provider value={{
-      items,
-      addToWishlist,
-      removeFromWishlist,
-      isInWishlist,
-      isLoading,
-      isWishlistOpen,
-      setIsWishlistOpen,
-      wishlistCount: items.length
-    }}>
+    <WishlistContext.Provider value={contextValue}>
       {children}
     </WishlistContext.Provider>
   );

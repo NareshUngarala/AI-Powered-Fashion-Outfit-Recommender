@@ -178,11 +178,11 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
   };
 
   const getCartItem = (itemId: string) => {
-    return cartItems.find(item => item.id === itemId && item.size === 'M' && item.color === (outfitData?.items.find(i => i.id === itemId)?.color || 'Standard'));
+    return cartItems.find(item => item.id === itemId && item.size === selectedSize && item.color === (outfitData?.items.find(i => i.id === itemId)?.color || 'Standard'));
   };
 
   const handleUpdateCart = async (item: OutfitItem, change: number) => {
-      const cartItem = cartItems.find(i => i.id === item.id && i.size === 'M' && i.color === item.color);
+      const cartItem = cartItems.find(i => i.id === item.id && i.size === selectedSize && i.color === item.color);
       
       if (cartItem) {
           const newQuantity = cartItem.quantity + change;
@@ -197,7 +197,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
               name: item.name,
               price: item.price,
               image: item.image,
-              size: 'M',
+              size: selectedSize,
               color: item.color,
               brand: 'Fashion Brand'
           });
@@ -205,7 +205,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
   };
 
   return (
-    <div className="bg-white lg:h-[calc(100vh-64px)] lg:overflow-hidden h-auto min-h-[calc(100vh-64px)] overflow-y-auto font-sans text-gray-900 pt-4 lg:pt-8">
+    <div className="bg-white lg:h-[calc(100vh-64px)] lg:overflow-hidden h-auto min-h-[calc(100vh-64px)] overflow-y-auto font-sans text-gray-900 pt-4 lg:pt-4 xl:pt-8">
       
       <div className="w-full h-full pl-4 pr-4 lg:pr-12 pb-4">
         <div className={`lg:grid ${showOutfitCard ? 'lg:grid-cols-[72fr_28fr]' : 'lg:grid-cols-1'} gap-6 lg:gap-4 lg:h-full h-auto flex flex-col`}>
@@ -225,7 +225,7 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
                           setCurrentImageIndex(idx);
                           setIsAutoPlaying(false);
                         }}
-                        className={`relative w-20 h-24 md:w-24 md:h-32 flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 bg-white ${
+                        className={`relative w-20 h-24 md:w-24 md:h-32 lg:w-20 lg:h-24 xl:w-24 xl:h-32 flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 bg-white ${
                           idx === currentImageIndex 
                             ? 'scale-105 shadow-lg ' + (!isAutoPlaying ? 'border border-green-600 ring-1 ring-green-600 ring-offset-1' : 'border-2 border-green-400/50')
                             : 'border border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md'

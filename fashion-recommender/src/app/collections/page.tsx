@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import Image from 'next/image';
+import AnimateOnScroll from '@/components/AnimateOnScroll';
 
 interface Collection {
   _id: string;
@@ -50,7 +51,7 @@ export default function CollectionsPage() {
               ))}
            </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[400px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[300px] lg:auto-rows-[320px] xl:auto-rows-[400px] stagger-children">
             {collections.map((collection, index) => {
               // Logic to vary card sizes/aspects to mimic the bento/masonry layout
               // Index 0: Large Vertical (Row span 2)
@@ -61,15 +62,17 @@ export default function CollectionsPage() {
               const isWide = index === 3;
               
               return (
+                <AnimateOnScroll key={collection._id} className={`${isLarge ? 'md:row-span-2 md:h-full' : ''} ${isWide ? 'md:col-span-2' : ''}`}>
                 <Link 
-                  key={collection._id} 
                   href={`/collections/${collection.slug}`}
-                  className={`relative group cursor-pointer overflow-hidden rounded-3xl ${isLarge ? 'md:row-span-2 md:h-full' : ''} ${isWide ? 'md:col-span-2' : ''}`}
+                  className="relative group cursor-pointer overflow-hidden rounded-3xl block h-full"
                 >
                   <Image
                     src={collection.imageUrl || 'https://via.placeholder.com/600x800?text=No+Image'}
                     alt={collection.name}
                     fill
+                    loading="lazy"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   
@@ -90,6 +93,7 @@ export default function CollectionsPage() {
                     </h3>
                   </div>
                 </Link>
+                </AnimateOnScroll>
               );
             })}
           </div>

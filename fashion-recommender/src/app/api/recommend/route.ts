@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { product, occasion, gender } = body;
+    const { product, occasion, gender, preferredStyle } = body;
 
     if (!product) {
       return NextResponse.json({ error: 'Product data is required' }, { status: 400 });
     }
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/recommend`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product, occasion, gender }),
+        body: JSON.stringify({ product, occasion, gender, preferredStyle }),
     });
 
     if (!response.ok) {

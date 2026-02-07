@@ -53,7 +53,7 @@ export default function SignIn() {
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2">
            <Image 
-             src="/logo.jpg" 
+             src="/logo.png" 
              alt="Style Genie Logo" 
              width={40} 
              height={40} 
@@ -63,7 +63,7 @@ export default function SignIn() {
         </div>
 
         {/* Hero Text */}
-        <div className="relative z-10 max-w-lg">
+        <div className="relative z-10 max-w-lg animate-page-enter">
           <h1 className="text-5xl font-medium leading-tight mb-6">
             Elevate Your Wardrobe with AI.
           </h1>
@@ -75,17 +75,20 @@ export default function SignIn() {
         {/* Footer */}
         <div className="relative z-10 flex justify-between text-xs text-gray-400">
           <p>&copy; {new Date().getFullYear()} Style Genie Inc.</p>
-          <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <div className="flex gap-4">
+            <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+          </div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8 lg:p-12 h-full overflow-hidden">
-        <div className="max-w-md w-full flex flex-col justify-center h-full max-h-[800px]">
+        <div className="max-w-md w-full flex flex-col justify-center h-full max-h-[800px] animate-form-enter">
           {/* Mobile Logo (Visible only on small screens) */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <Image 
-              src="/logo.jpg" 
+              src="/logo.png" 
               alt="Style Genie Logo" 
               width={32} 
               height={32} 
@@ -170,6 +173,7 @@ export default function SignIn() {
             </div>
 
             <div className="mt-4 flex justify-center gap-3">
+              {/* Google */}
               <button
                 type="button"
                 className="flex items-center justify-center w-12 h-12 border border-gray-200 rounded-full shadow-sm bg-white hover:bg-gray-50 transition-all"
@@ -193,12 +197,13 @@ export default function SignIn() {
                   />
                 </svg>
               </button>
+              {/* Facebook */}
               <button
                 type="button"
-                className="flex items-center justify-center w-12 h-12 border border-gray-200 rounded-full shadow-sm bg-white hover:bg-gray-50 transition-all text-gray-900"
+                className="flex items-center justify-center w-12 h-12 border border-gray-200 rounded-full shadow-sm bg-white hover:bg-gray-50 transition-all"
               >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.39-1.09-.52-2.04-.48-3.24 0-1.44.58-2.2.08-3.08-.88-1.91-2.05-1.42-5.96 1.48-6.12 1.28-.07 2.15.54 2.89.54.71 0 1.94-.65 3.33-.55 2.13.15 3.06 1.15 3.52 1.84-2.88 1.55-2.39 5.37.64 6.42-.64 1.41-1.49 2.8-2.46 3.82zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="#1877F2">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
               </button>
             </div>

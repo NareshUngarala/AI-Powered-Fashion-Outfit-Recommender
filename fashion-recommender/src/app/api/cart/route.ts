@@ -5,11 +5,9 @@ import { authOptions } from '@/lib/auth';
 // Helper to get user ID from session
 async function getUserId() {
   const session = await getServerSession(authOptions);
-  // @ts-expect-error: Session user type gap
   if (!session || !session.user || !session.user.id) {
     return null;
   }
-  // @ts-expect-error: Session user type gap
   return session.user.id;
 }
 
@@ -20,7 +18,7 @@ export async function GET(_req: Request) {
   }
 
   try {
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/cart/${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/cart/${userId}`, {
         cache: 'no-store'
     });
 
@@ -43,7 +41,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/cart/${userId}/add`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/cart/${userId}/add`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -77,7 +75,7 @@ export async function PUT(req: Request) {
         // Provide defaults if needed by Pydantic strict mode, but Optional fields should be fine
     };
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/cart/${userId}/update`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/cart/${userId}/update`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -111,7 +109,7 @@ export async function DELETE(req: Request) {
       if (size) query.append('size', size);
       if (color) query.append('color', color);
 
-      const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/cart/${userId}/item?${query.toString()}`, {
+      const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/cart/${userId}/item?${query.toString()}`, {
           method: 'DELETE',
       });
       

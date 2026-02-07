@@ -17,13 +17,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Invalid data: items required' }, { status: 400 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     // Call Python backend to generate the look
     // We assume the backend handles fetching the user's profile image using the userId
     // or we could fetch it here and pass it, but backend is cleaner.
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/generate-look`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/generate-look`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import {
   Lock 
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useCheckout } from '@/context/CheckoutContext';
 
 export default function CartDrawer() {
   const { 
@@ -24,6 +25,7 @@ export default function CartDrawer() {
     isCartOpen, 
     setIsCartOpen 
   } = useCart();
+  const { setIsCheckoutOpen } = useCheckout();
   
   const [mounted, setMounted] = useState(false);
 
@@ -64,7 +66,7 @@ export default function CartDrawer() {
 
         {/* Drawer Panel */}
         <div 
-          className={`relative w-full max-w-[420px] bg-white h-full shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${
+          className={`relative w-full max-w-[90vw] sm:max-w-[420px] bg-white h-full shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${
             isCartOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
@@ -183,13 +185,12 @@ export default function CartDrawer() {
                 </div>
                 
                 <div className="space-y-3">
-                  <Link 
-                    href="/cart"
-                    onClick={() => setIsCartOpen(false)}
+                  <button 
+                    onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
                     className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-cyan-200 hover:-translate-y-0.5 transition-all duration-300"
                   >
                     Checkout <ArrowRight className="w-5 h-5" />
-                  </Link>
+                  </button>
                   
                   <div className="flex items-center justify-center gap-2 text-gray-400">
                     <Lock className="w-3 h-3" />

@@ -5,14 +5,12 @@ import { authOptions } from '@/lib/auth';
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    // @ts-expect-error: Session user type gap
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
     const { items, total, shippingAddress } = body;
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
     if (!items || items.length === 0) {
@@ -22,14 +20,35 @@ export async function POST(req: Request) {
       );
     }
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/checkout`, {
+    // Map frontend cart items to backend CartItemModel format
+    const backendItems = items.map((item: { id?: string; productId?: string; name?: string; price?: number; image?: string; size?: string; color?: string; quantity?: number }) => ({
+      productId: item.id || item.productId || '',
+      name: item.name || '',
+      price: item.price || 0,
+      image: item.image || '',
+      size: item.size || 'M',
+      color: item.color || '',
+      quantity: item.quantity || 1,
+    }));
+
+    // Map frontend shipping address to backend ShippingAddress format
+    const backendAddress = {
+      fullName: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim(),
+      addressLine1: shippingAddress.streetAddress || '',
+      city: shippingAddress.city || '',
+      state: shippingAddress.state || '',
+      postalCode: shippingAddress.pincode || '',
+      country: 'India',
+    };
+
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             userId,
-            items,
+            items: backendItems,
             total,
-            shippingAddress
+            shippingAddress: backendAddress
         }),
     });
 

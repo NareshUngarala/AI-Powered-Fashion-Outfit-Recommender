@@ -16,10 +16,9 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/user/change-password?userId=${userId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/user/change-password?userId=${userId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

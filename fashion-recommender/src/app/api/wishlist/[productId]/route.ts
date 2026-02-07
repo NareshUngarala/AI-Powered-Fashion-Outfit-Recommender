@@ -13,11 +13,10 @@ export async function DELETE(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // @ts-expect-error: Session user type gap
     const userId = session.user.id;
     const { productId } = await params;
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/wishlist/${userId}/remove/${productId}`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/wishlist/${userId}/remove/${productId}`, {
         method: 'DELETE',
     });
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/collections`);
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/collections`);
     
     if (!response.ok) {
         throw new Error(`Python backend error: ${response.statusText}`);

@@ -56,7 +56,7 @@ export async function POST() {
       collections: styleCollections
     };
 
-    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/seed`, {
+    const response = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/seed`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

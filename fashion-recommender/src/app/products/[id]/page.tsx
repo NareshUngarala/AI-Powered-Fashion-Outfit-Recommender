@@ -3,7 +3,8 @@ import ProductDetailClient from '@/components/ProductDetailClient';
 import { notFound } from 'next/navigation';
 import { PRODUCTS } from '@/data/products';
 
-export const dynamic = 'force-dynamic';
+// Revalidate product pages every 60 seconds (ISR)
+export const revalidate = 60;
 
 async function getProduct(id: string) {
   // Check mock data first (for "p1", "p2" etc)
@@ -18,8 +19,8 @@ async function getProduct(id: string) {
   }
 
   try {
-    const res = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://localhost:8000'}/products/${id}`, {
-        cache: 'no-store'
+    const res = await fetch(`${process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000'}/products/${id}`, {
+        next: { revalidate: 60 } // Cache for 60 seconds with ISR
     });
     
     if (!res.ok) return null;
@@ -30,7 +31,7 @@ async function getProduct(id: string) {
   }
 }
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   // Static demo bypass

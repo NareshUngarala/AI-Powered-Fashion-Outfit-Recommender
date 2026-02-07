@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -35,7 +35,8 @@ interface Order {
   createdAt: string;
 }
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { status } = useSession();
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
@@ -52,7 +53,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
     const fetchOrder = async () => {
       if (status === 'authenticated') {
         try {
-          const res = await fetch(`/api/orders/${params.id}`);
+          const res = await fetch(`/api/orders/${id}`);
           const data = await res.json();
 
           if (data.success) {
@@ -70,7 +71,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
     };
 
     fetchOrder();
-  }, [status, params.id]);
+  }, [status, id]);
 
   if (loading || status === 'loading') {
     return (

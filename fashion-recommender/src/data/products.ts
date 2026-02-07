@@ -1521,8 +1521,10 @@ export const PRODUCTS: Product[] = [
     match: 85,
     category: "Belt",
     style: "Accessories",
-    imageUrl: "https://m.media-amazon.com/images/I/81B-9hKqE9L._SX679_.jpg",
-    images: ["https://m.media-amazon.com/images/I/81B-9hKqE9L._SX679_.jpg"],
+    imageUrl: "https://m.media-amazon.com/images/I/7130wUYpFPL._SY879_.jpg",
+    images: ["https://m.media-amazon.com/images/I/81zlpV+AMoL._SX569_.jpg",
+      "https://m.media-amazon.com/images/I/81zlpV+AMoL._SX569_.jpg"
+            ],
     sku: "ACC-0002",
     material: "Leather",
     fit: "Regular",
@@ -1557,8 +1559,8 @@ export const PRODUCTS: Product[] = [
     match: 89,
     category: "Bag",
     style: "Accessories",
-    imageUrl: "https://m.media-amazon.com/images/I/91tA4a+EbfL._SY695_.jpg",
-    images: ["https://m.media-amazon.com/images/I/91tA4a+EbfL._SY695_.jpg"],
+    imageUrl: "https://m.media-amazon.com/images/I/81MkRtXoSPL._SL1500_.jpg",
+    images: ["https://m.media-amazon.com/images/I/81o2C0XJsVL._SL1500_.jpg"],
     sku: "ACC-0004",
     material: "Leather",
     fit: "One Size",
@@ -2331,9 +2333,10 @@ export const PRODUCTS: Product[] = [
     match: 90,
     category: "Belt",
     style: "Accessories",
-    imageUrl: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/71owGXTI4JL._SX679_.jpg",
     images: [
-      "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/71owGXTI4JL._SX679_.jpg",
+      "https://m.media-amazon.com/images/I/91i3EGlfJeL._SX679_.jpg"
     ],
     sku: "ACC-0008",
     material: "Leather",
@@ -2351,9 +2354,10 @@ export const PRODUCTS: Product[] = [
     match: 87,
     category: "Belt",
     style: "Accessories",
-    imageUrl: "https://images.pexels.com/photos/45055/pexels-photo-45055.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/71nlaLJtmLL._SY879_.jpg",
     images: [
-      "https://images.pexels.com/photos/45055/pexels-photo-45055.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/71nlaLJtmLL._SY879_.jpg",
+      "https://m.media-amazon.com/images/I/71rgMD-SZiL._SX569_.jpg"
     ],
     sku: "ACC-0009",
     material: "Leather",
@@ -2411,9 +2415,9 @@ export const PRODUCTS: Product[] = [
     match: 88,
     category: "Bag",
     style: "Accessories",
-    imageUrl: "https://images.pexels.com/photos/2905238/pexels-photo-2905238.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/918t7nycBdL._SX679_.jpg",
     images: [
-      "https://images.pexels.com/photos/2905238/pexels-photo-2905238.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/918t7nycBdL._SX679_.jpg"
     ],
     sku: "ACC-0012",
     material: "Canvas",
@@ -2431,9 +2435,9 @@ export const PRODUCTS: Product[] = [
     match: 92,
     category: "Bag",
     style: "Accessories",
-    imageUrl: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/81lZ4uj7Z2L._SY695_.jpg",
     images: [
-      "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/81lZ4uj7Z2L._SY695_.jpg"
     ],
     sku: "ACC-0013",
     material: "Leather",
@@ -2947,9 +2951,10 @@ export const PRODUCTS: Product[] = [
     match: 95,
     category: "Bandhgala",
     style: "Party Wear",
-    imageUrl: "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/61VLC1WRZUL._SY879_.jpg",
     images: [
-      "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/61VLC1WRZUL._SY879_.jpg",
+      "https://m.media-amazon.com/images/I/61WsK4jLRFL._SY741_.jpg"
     ],
     sku: "FUS-0030",
     material: "Silk Blend",
@@ -2967,9 +2972,10 @@ export const PRODUCTS: Product[] = [
     match: 96,
     category: "Bandhgala Jacket",
     style: "Party Wear",
-    imageUrl: "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "http://m.media-amazon.com/images/I/61BJ7ALDR6L._SY879_.jpg",
     images: [
-      "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "http://m.media-amazon.com/images/I/61BJ7ALDR6L._SY879_.jpg",
+      "https://m.media-amazon.com/images/I/71sHNejVL9L._SY741_.jpg"
     ],
     sku: "FUS-0031",
     material: "Velvet",
@@ -3549,9 +3555,10 @@ export const PRODUCTS: Product[] = [
     match: 87,
     category: "Bag",
     style: "Accessories",
-    imageUrl: "https://images.pexels.com/photos/915915/pexels-photo-915915.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/81lZ4uj7Z2L._SY695_.jpg",
     images: [
-      "https://images.pexels.com/photos/915915/pexels-photo-915915.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/81lZ4uj7Z2L._SY695_.jpg",
+      "https://m.media-amazon.com/images/I/713dKeAcuOL._SY695_.jpg"
     ],
     sku: "ACC-0020",
     material: "Leather",
@@ -3657,9 +3664,10 @@ export const PRODUCTS: Product[] = [
     match: 90,
     category: "Belt",
     style: "Accessories",
-    imageUrl: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600",
+    imageUrl: "https://m.media-amazon.com/images/I/71KCjw8zzlL._SY879_.jpg",
     images: [
-      "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"
+      "https://m.media-amazon.com/images/I/71KCjw8zzlL._SY879_.jpg",
+      "https://m.media-amazon.com/images/I/71N4ntZ1mZL._SX569_.jpg"
     ],
     sku: "ACC-0026",
     material: "Leather",
