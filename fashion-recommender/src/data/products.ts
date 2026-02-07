@@ -40,7 +40,8 @@ export const PRODUCTS: Product[] = [
     fit: "Regular",
     productUrl: "https://www.manyavar.com",
     stock: 18,
-    tags: ["wedding", "festive", "ethnic", "embroidered"]
+    tags: ["wedding", "festive", "ethnic", "embroidered"],
+    colors: ["Ivory"]
   },
   {
     _id: "trad2",
@@ -62,7 +63,8 @@ export const PRODUCTS: Product[] = [
     fit: "Relaxed",
     productUrl: "https://www.fabindia.com",
     stock: 40,
-    tags: ["cotton", "comfort", "dailywear", "festive"]
+    tags: ["cotton", "comfort", "dailywear", "festive"],
+    colors: ["White"]
   },
   {
     _id: "trad3",
@@ -197,7 +199,8 @@ export const PRODUCTS: Product[] = [
     fit: "Regular",
     productUrl: "https://www.mufticlothing.com",
     stock: 120,
-    tags: ["basic", "summer", "everyday"]
+    tags: ["basic", "summer", "everyday"],
+    colors: ["White"]
   },
   {
     _id: "cas2",
@@ -219,7 +222,8 @@ export const PRODUCTS: Product[] = [
     fit: "Slim",
     productUrl: "https://www.flyingmachine.com",
     stock: 90,
-    tags: ["denim", "street", "casual"]
+    tags: ["denim", "street", "casual"],
+    colors: ["Blue"]
   },
   // Casual Wear (New)
   {
@@ -242,7 +246,8 @@ export const PRODUCTS: Product[] = [
     fit: "Regular",
     productUrl: "https://www.myntra.com/roadster",
     stock: 140,
-    tags: ["street", "graphic", "trendy"]
+    tags: ["street", "graphic", "trendy"],
+    colors: ["Black"]
   },
   {
     _id: "cas12",
@@ -264,7 +269,8 @@ export const PRODUCTS: Product[] = [
     fit: "Slim",
     productUrl: "https://www.myntra.com/hrx",
     stock: 85,
-    tags: ["chinos", "casual", "comfort"]
+    tags: ["chinos", "casual", "comfort"],
+    colors: ["Olive"]
   },
 
   // Formal Wear (Existing)
@@ -288,7 +294,8 @@ export const PRODUCTS: Product[] = [
     fit: "Slim",
     productUrl: "https://www.peterengland.com",
     stock: 60,
-    tags: ["office", "workwear", "formal"]
+    tags: ["office", "workwear", "formal"],
+    colors: ["White"]
   },
   // Formal Wear (New)
   {
@@ -311,7 +318,8 @@ export const PRODUCTS: Product[] = [
     fit: "Regular",
     productUrl: "https://www.louisphilippe.com",
     stock: 50,
-    tags: ["office", "formal", "business"]
+    tags: ["office", "formal", "business"],
+    colors: ["Navy"]
   },
   {
     _id: "form12",
@@ -333,7 +341,8 @@ export const PRODUCTS: Product[] = [
     fit: "Slim",
     productUrl: "https://www.vanheusenindia.com",
     stock: 22,
-    tags: ["blazer", "office", "formal"]
+    tags: ["blazer", "office", "formal"],
+    colors: ["Charcoal"]
   },
 
   // Fusion/Party Wear (Existing)
@@ -680,7 +689,8 @@ export const PRODUCTS: Product[] = [
     fit: "Slim",
     productUrl: "https://www.vanheusenindia.com",
     stock: 45,
-    tags: ["officewear", "professional", "trousers"]
+    tags: ["officewear", "professional", "trousers"],
+    colors: ["Grey"]
   },
   {
     _id: "form16",
@@ -702,7 +712,8 @@ export const PRODUCTS: Product[] = [
     fit: "Tailored",
     productUrl: "https://www.louisphilippeindia.com",
     stock: 18,
-    tags: ["blazer", "corporate", "business"]
+    tags: ["blazer", "corporate", "business"],
+    colors: ["Navy"]
   },
 
   // Fusion/Party Wear (New Batch 3)
@@ -1400,13 +1411,14 @@ export const PRODUCTS: Product[] = [
     match: 95,
     category: "Sneakers",
     style: "Casual Wear",
-    imageUrl: "https://m.media-amazon.com/images/I/61N9KkT0mEL._SY695_.jpg",
-    images: ["https://m.media-amazon.com/images/I/61N9KkT0mEL._SY695_.jpg"],
+    imageUrl: "https://m.media-amazon.com/images/I/31TexuwyQwL._SY395_SX395_QL70_FMwebp_.jpg",
+    images: ["https://m.media-amazon.com/images/I/31TexuwyQwL._SY395_SX395_QL70_FMwebp_.jpg"],
     sku: "SHOE-0001",
     material: "Leather",
     fit: "Regular",
     stock: 50,
-    tags: ["shoes", "sneakers", "white"]
+    tags: ["shoes", "sneakers", "white"],
+    colors: ["White"]
   },
   {
     _id: "shoe2",
@@ -1423,7 +1435,8 @@ export const PRODUCTS: Product[] = [
     material: "Leather",
     fit: "Regular",
     stock: 30,
-    tags: ["shoes", "loafers", "formal"]
+    tags: ["shoes", "loafers", "formal"],
+    colors: ["Brown"]
   },
   {
     _id: "shoe3",
@@ -1440,7 +1453,8 @@ export const PRODUCTS: Product[] = [
     material: "Leather",
     fit: "Regular",
     stock: 25,
-    tags: ["shoes", "formal", "black"]
+    tags: ["shoes", "formal", "black"],
+    colors: ["Black"]
   },
   {
     _id: "shoe4",
@@ -1457,7 +1471,8 @@ export const PRODUCTS: Product[] = [
     material: "Synthetic",
     fit: "Regular",
     stock: 40,
-    tags: ["shoes", "ethnic", "wedding"]
+    tags: ["shoes", "ethnic", "wedding"],
+    colors: ["Gold"]
   },
   {
     _id: "shoe5",
@@ -1474,7 +1489,8 @@ export const PRODUCTS: Product[] = [
     material: "Mesh/Synthetic",
     fit: "Regular",
     stock: 20,
-    tags: ["shoes", "street", "sneakers"]
+    tags: ["shoes", "street", "sneakers"],
+    colors: ["Black", "White"]
   },
 
   // --- Accessories ---
@@ -1493,7 +1509,8 @@ export const PRODUCTS: Product[] = [
     material: "Steel",
     fit: "One Size",
     stock: 100,
-    tags: ["accessories", "watch", "silver"]
+    tags: ["accessories", "watch", "silver"],
+    colors: ["Silver"]
   },
   {
     _id: "acc2",
@@ -1510,7 +1527,8 @@ export const PRODUCTS: Product[] = [
     material: "Leather",
     fit: "Regular",
     stock: 60,
-    tags: ["accessories", "belt", "brown"]
+    tags: ["accessories", "belt", "brown"],
+    colors: ["Brown"]
   },
   {
     _id: "acc3",
@@ -1527,7 +1545,8 @@ export const PRODUCTS: Product[] = [
     material: "Metal",
     fit: "One Size",
     stock: 40,
-    tags: ["accessories", "sunglasses", "summer"]
+    tags: ["accessories", "sunglasses", "summer"],
+    colors: ["Gold"]
   },
   {
     _id: "acc4",
@@ -1544,7 +1563,8 @@ export const PRODUCTS: Product[] = [
     material: "Leather",
     fit: "One Size",
     stock: 15,
-    tags: ["accessories", "bag", "work"]
+    tags: ["accessories", "bag", "work"],
+    colors: ["Brown"]
   },
 
   {
@@ -2003,13 +2023,13 @@ export const PRODUCTS: Product[] = [
     description: "A refined leather-strap watch that blends classic design with modern appeal.",
     price: 7999,
     match: 95,
-    imageUrl: "https://m.media-amazon.com/images/I/71dKpK2J1tL._SY741_.jpg",
+    imageUrl: "https://m.media-amazon.com/images/I/41o2f26hKkS._SY300_SX300_QL70_FMwebp_.jpg",
     category: "Accessories",
     style: "Formal",
     images: [
-      "https://m.media-amazon.com/images/I/71dKpK2J1tL._SY741_.jpg",
-      "https://m.media-amazon.com/images/I/61P8Z9H1RZL._SY741_.jpg",
-      "https://m.media-amazon.com/images/I/61S6J9QZ7DL._SY741_.jpg"
+      "https://m.media-amazon.com/images/I/41o2f26hKkS._SY300_SX300_QL70_FMwebp_.jpg",
+      "https://m.media-amazon.com/images/I/61rIH0Ts3ES._SX522_.jpg",
+      "https://m.media-amazon.com/images/I/71Rwu+0RHES._SX522_.jpg"
     ],
     sku: "ACC-010",
     material: "Leather",
@@ -2017,5 +2037,1635 @@ export const PRODUCTS: Product[] = [
     stock: 15,
     tags: ["watch", "leather", "formal"],
     colors: ["Brown"]
+  },
+
+  // ========== NEW FOOTWEAR ==========
+  {
+    _id: "shoe6",
+    name: "Navy Blue Canvas Sneakers",
+    brand: "Puma",
+    description: "Lightweight canvas sneakers in navy blue for casual everyday wear.",
+    price: 2499,
+    match: 91,
+    category: "Sneakers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0006",
+    material: "Canvas",
+    fit: "Regular",
+    stock: 45,
+    tags: ["sneakers", "canvas", "navy"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "shoe7",
+    name: "Black Running Sports Shoes",
+    brand: "Nike",
+    description: "High-performance black running shoes with cushioned sole for daily training.",
+    price: 4999,
+    match: 94,
+    category: "Sneakers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0007",
+    material: "Mesh/Rubber",
+    fit: "Regular",
+    stock: 35,
+    tags: ["running", "sports", "black"],
+    colors: ["Black"]
+  },
+  {
+    _id: "shoe8",
+    name: "Grey Retro Sneakers",
+    brand: "New Balance",
+    description: "Classic retro-style grey sneakers that pair with any casual outfit.",
+    price: 5499,
+    match: 93,
+    category: "Sneakers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1032110/pexels-photo-1032110.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1032110/pexels-photo-1032110.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0008",
+    material: "Suede/Mesh",
+    fit: "Regular",
+    stock: 25,
+    tags: ["retro", "sneakers", "grey"],
+    colors: ["Grey"]
+  },
+  {
+    _id: "shoe9",
+    name: "Tan Leather Loafers",
+    brand: "Clarks",
+    description: "Premium tan leather loafers for smart-casual and semi-formal occasions.",
+    price: 5299,
+    match: 92,
+    category: "Loafers",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/293405/pexels-photo-293405.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/293405/pexels-photo-293405.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0009",
+    material: "Leather",
+    fit: "Regular",
+    stock: 30,
+    tags: ["loafers", "leather", "tan"],
+    colors: ["Brown"]
+  },
+  {
+    _id: "shoe10",
+    name: "Black Suede Loafers",
+    brand: "Hush Puppies",
+    description: "Sleek black suede loafers for formal events and office wear.",
+    price: 3999,
+    match: 90,
+    category: "Loafers",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/267301/pexels-photo-267301.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/267301/pexels-photo-267301.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0010",
+    material: "Suede",
+    fit: "Regular",
+    stock: 20,
+    tags: ["loafers", "suede", "black"],
+    colors: ["Black"]
+  },
+  {
+    _id: "shoe11",
+    name: "Brown Derby Formal Shoes",
+    brand: "Red Tape",
+    description: "Classic brown derby shoes with genuine leather for office and formal occasions.",
+    price: 2999,
+    match: 91,
+    category: "Formal Shoes",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/292999/pexels-photo-292999.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/292999/pexels-photo-292999.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0011",
+    material: "Leather",
+    fit: "Regular",
+    stock: 35,
+    tags: ["formal", "derby", "brown"],
+    colors: ["Brown"]
+  },
+  {
+    _id: "shoe12",
+    name: "Black Monk Strap Shoes",
+    brand: "Louis Philippe",
+    description: "Elegant black monk strap shoes for premium formal styling.",
+    price: 6499,
+    match: 95,
+    category: "Formal Shoes",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/298863/pexels-photo-298863.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/298863/pexels-photo-298863.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0012",
+    material: "Leather",
+    fit: "Regular",
+    stock: 18,
+    tags: ["formal", "monk-strap", "premium"],
+    colors: ["Black"]
+  },
+  {
+    _id: "shoe13",
+    name: "Brown Chelsea Boots",
+    brand: "Clarks",
+    description: "Versatile brown Chelsea boots that work for casual and semi-formal occasions.",
+    price: 7499,
+    match: 93,
+    category: "Boots",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1159670/pexels-photo-1159670.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1159670/pexels-photo-1159670.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0013",
+    material: "Leather",
+    fit: "Regular",
+    stock: 15,
+    tags: ["boots", "chelsea", "brown"],
+    colors: ["Brown"]
+  },
+  {
+    _id: "shoe14",
+    name: "Black Leather Ankle Boots",
+    brand: "Red Tape",
+    description: "Rugged black ankle boots for winter styling and casual wear.",
+    price: 3499,
+    match: 90,
+    category: "Boots",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1476430/pexels-photo-1476430.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1476430/pexels-photo-1476430.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0014",
+    material: "Leather",
+    fit: "Regular",
+    stock: 22,
+    tags: ["boots", "ankle", "black"],
+    colors: ["Black"]
+  },
+  {
+    _id: "shoe15",
+    name: "Gold Embroidered Mojaris",
+    brand: "Mochi",
+    description: "Handcrafted gold embroidered mojaris for wedding and festive occasions.",
+    price: 2499,
+    match: 91,
+    category: "Mojaris",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/3289663/pexels-photo-3289663.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3289663/pexels-photo-3289663.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0015",
+    material: "Synthetic/Embroidered",
+    fit: "Regular",
+    stock: 35,
+    tags: ["mojaris", "ethnic", "gold"],
+    colors: ["Gold"]
+  },
+  {
+    _id: "shoe16",
+    name: "White Slip-On Sneakers",
+    brand: "Vans",
+    description: "Minimalist white slip-on sneakers for effortless casual style.",
+    price: 3299,
+    match: 92,
+    category: "Sneakers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1858404/pexels-photo-1858404.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1858404/pexels-photo-1858404.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0016",
+    material: "Canvas",
+    fit: "Regular",
+    stock: 40,
+    tags: ["slip-on", "sneakers", "white"],
+    colors: ["White"]
+  },
+
+  // ========== NEW ACCESSORIES ==========
+  {
+    _id: "acc5",
+    name: "Black Chronograph Watch",
+    brand: "Fossil",
+    description: "Bold black chronograph watch with stainless steel band for a sporty-formal look.",
+    price: 8999,
+    match: 94,
+    category: "Watch",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0005",
+    material: "Stainless Steel",
+    fit: "One Size",
+    stock: 25,
+    tags: ["watch", "chronograph", "black"],
+    colors: ["Black"]
+  },
+  {
+    _id: "acc6",
+    name: "Rose Gold Analog Watch",
+    brand: "Titan",
+    description: "Elegant rose gold watch with leather strap for formal and party occasions.",
+    price: 4999,
+    match: 91,
+    category: "Watch",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/280250/pexels-photo-280250.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/280250/pexels-photo-280250.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0006",
+    material: "Leather/Metal",
+    fit: "One Size",
+    stock: 20,
+    tags: ["watch", "rose-gold", "formal"],
+    colors: ["Gold"]
+  },
+  {
+    _id: "acc7",
+    name: "Digital Sports Watch",
+    brand: "Casio",
+    description: "Durable digital sports watch with water resistance for active lifestyles.",
+    price: 2499,
+    match: 88,
+    category: "Watch",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/277390/pexels-photo-277390.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/277390/pexels-photo-277390.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0007",
+    material: "Resin/Rubber",
+    fit: "One Size",
+    stock: 50,
+    tags: ["watch", "digital", "sports"],
+    colors: ["Black"]
+  },
+  {
+    _id: "acc8",
+    name: "Black Leather Reversible Belt",
+    brand: "Tommy Hilfiger",
+    description: "Reversible black and brown leather belt - two looks in one.",
+    price: 2199,
+    match: 90,
+    category: "Belt",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0008",
+    material: "Leather",
+    fit: "Regular",
+    stock: 40,
+    tags: ["belt", "reversible", "leather"],
+    colors: ["Black", "Brown"]
+  },
+  {
+    _id: "acc9",
+    name: "Tan Italian Leather Belt",
+    brand: "Woodland",
+    description: "Premium tan Italian leather belt with brass buckle for formal outfits.",
+    price: 1799,
+    match: 87,
+    category: "Belt",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/45055/pexels-photo-45055.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/45055/pexels-photo-45055.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0009",
+    material: "Leather",
+    fit: "Regular",
+    stock: 35,
+    tags: ["belt", "tan", "formal"],
+    colors: ["Brown"]
+  },
+  {
+    _id: "acc10",
+    name: "Wayfarer Sunglasses",
+    brand: "Ray-Ban",
+    description: "Iconic wayfarer sunglasses with UV protection for a timeless look.",
+    price: 7490,
+    match: 93,
+    category: "Sunglasses",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/701877/pexels-photo-701877.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/701877/pexels-photo-701877.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0010",
+    material: "Acetate/Glass",
+    fit: "One Size",
+    stock: 30,
+    tags: ["sunglasses", "wayfarer", "uv-protection"],
+    colors: ["Black"]
+  },
+  {
+    _id: "acc11",
+    name: "Round Metal Sunglasses",
+    brand: "Vincent Chase",
+    description: "Trendy round metal-frame sunglasses with gradient lenses.",
+    price: 1499,
+    match: 86,
+    category: "Sunglasses",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/46710/pexels-photo-46710.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/46710/pexels-photo-46710.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0011",
+    material: "Metal/Glass",
+    fit: "One Size",
+    stock: 45,
+    tags: ["sunglasses", "round", "trendy"],
+    colors: ["Gold"]
+  },
+  {
+    _id: "acc12",
+    name: "Canvas Laptop Backpack",
+    brand: "Wildcraft",
+    description: "Durable canvas backpack with laptop compartment for work and travel.",
+    price: 2499,
+    match: 88,
+    category: "Bag",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/2905238/pexels-photo-2905238.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/2905238/pexels-photo-2905238.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0012",
+    material: "Canvas",
+    fit: "One Size",
+    stock: 30,
+    tags: ["bag", "backpack", "laptop"],
+    colors: ["Grey"]
+  },
+  {
+    _id: "acc13",
+    name: "Black Leather Briefcase",
+    brand: "Hidesign",
+    description: "Premium black leather briefcase for professionals and business meetings.",
+    price: 6999,
+    match: 92,
+    category: "Bag",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0013",
+    material: "Leather",
+    fit: "One Size",
+    stock: 12,
+    tags: ["bag", "briefcase", "formal"],
+    colors: ["Black"]
+  },
+  {
+    _id: "acc14",
+    name: "Navy Blue Baseball Cap",
+    brand: "Nike",
+    description: "Classic navy baseball cap with embroidered logo for casual and sporty outfits.",
+    price: 999,
+    match: 85,
+    category: "Hat",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/1878821/pexels-photo-1878821.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1878821/pexels-photo-1878821.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0014",
+    material: "Cotton Twill",
+    fit: "One Size",
+    stock: 60,
+    tags: ["cap", "baseball", "sports"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "acc15",
+    name: "Black Wool Fedora Hat",
+    brand: "FabSeasons",
+    description: "Stylish black wool fedora hat for a sophisticated casual look.",
+    price: 799,
+    match: 84,
+    category: "Hat",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/984619/pexels-photo-984619.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/984619/pexels-photo-984619.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0015",
+    material: "Wool",
+    fit: "One Size",
+    stock: 25,
+    tags: ["hat", "fedora", "stylish"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE FORMAL SHIRTS ==========
+  {
+    _id: "form20",
+    name: "White Slim Fit Formal Shirt",
+    brand: "Arrow",
+    description: "Crisp white formal shirt with slim fit for office and business meetings.",
+    price: 1599,
+    match: 95,
+    category: "Formal Shirt",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0020",
+    material: "Cotton Blend",
+    fit: "Slim",
+    stock: 70,
+    tags: ["formal", "white", "office"],
+    colors: ["White"]
+  },
+  {
+    _id: "form21",
+    name: "Light Blue Formal Shirt",
+    brand: "Peter England",
+    description: "Light blue formal shirt ideal for corporate environments and interviews.",
+    price: 1299,
+    match: 93,
+    category: "Formal Shirt",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0021",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 55,
+    tags: ["formal", "blue", "corporate"],
+    colors: ["Blue"]
+  },
+  {
+    _id: "form22",
+    name: "Pink Slim Fit Formal Shirt",
+    brand: "Van Heusen",
+    description: "Stylish pink formal shirt for a modern professional look.",
+    price: 1449,
+    match: 90,
+    category: "Formal Shirt",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/3760514/pexels-photo-3760514.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3760514/pexels-photo-3760514.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0022",
+    material: "Cotton Blend",
+    fit: "Slim",
+    stock: 40,
+    tags: ["formal", "pink", "modern"],
+    colors: ["Pink"]
+  },
+  {
+    _id: "form23",
+    name: "Navy Striped Formal Shirt",
+    brand: "Louis Philippe",
+    description: "Navy blue striped formal shirt for boardroom and executive meetings.",
+    price: 1899,
+    match: 94,
+    category: "Formal Shirt",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0023",
+    material: "Cotton",
+    fit: "Slim",
+    stock: 35,
+    tags: ["formal", "striped", "navy"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "form24",
+    name: "Black Formal Trousers",
+    brand: "Blackberrys",
+    description: "Sharp black formal trousers with perfect drape for professional settings.",
+    price: 1799,
+    match: 93,
+    category: "Formal Trousers",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0024",
+    material: "Poly Viscose",
+    fit: "Slim",
+    stock: 45,
+    tags: ["formal", "black", "office"],
+    colors: ["Black"]
+  },
+  {
+    _id: "form25",
+    name: "Beige Formal Trousers",
+    brand: "Arrow",
+    description: "Classic beige formal trousers for a polished business-casual appearance.",
+    price: 1599,
+    match: 89,
+    category: "Formal Trousers",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/3760514/pexels-photo-3760514.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3760514/pexels-photo-3760514.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0025",
+    material: "Cotton Blend",
+    fit: "Regular",
+    stock: 38,
+    tags: ["formal", "beige", "business-casual"],
+    colors: ["Beige"]
+  },
+
+  // ========== MORE SUITS (was 1, need 4+) ==========
+  {
+    _id: "form30",
+    name: "Navy Blue 2-Piece Slim Suit",
+    brand: "Raymond",
+    description: "Sharp navy blue slim-fit 2-piece suit for business meetings and formal events.",
+    price: 8999,
+    match: 96,
+    category: "Suit",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0030",
+    material: "Poly Wool",
+    fit: "Slim",
+    stock: 18,
+    tags: ["suit", "navy", "business"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "form31",
+    name: "Black Classic Fit Formal Suit",
+    brand: "Van Heusen",
+    description: "Timeless black formal suit ideal for weddings, galas, and corporate events.",
+    price: 7499,
+    match: 95,
+    category: "Suit",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/2955376/pexels-photo-2955376.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/2955376/pexels-photo-2955376.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0031",
+    material: "Poly Viscose",
+    fit: "Regular",
+    stock: 15,
+    tags: ["suit", "black", "wedding"],
+    colors: ["Black"]
+  },
+  {
+    _id: "form32",
+    name: "Beige Linen Summer Suit",
+    brand: "Arrow",
+    description: "Lightweight beige linen suit perfect for summer weddings and outdoor events.",
+    price: 6299,
+    match: 92,
+    category: "Suit",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0032",
+    material: "Linen Blend",
+    fit: "Regular",
+    stock: 12,
+    tags: ["suit", "linen", "summer-wedding"],
+    colors: ["Beige"]
+  },
+
+  // ========== MORE KURTA (was 1, need 4+) ==========
+  {
+    _id: "trad20",
+    name: "Navy Blue Cotton Kurta",
+    brand: "Fabindia",
+    description: "Comfortable navy cotton kurta for daily ethnic wear and casual occasions.",
+    price: 999,
+    match: 91,
+    category: "Kurta",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0020",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 50,
+    tags: ["kurta", "cotton", "daily"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "trad21",
+    name: "White Chikan Embroidered Kurta",
+    brand: "Manyavar",
+    description: "Elegant white chikankari embroidered kurta for festive and wedding events.",
+    price: 1699,
+    match: 94,
+    category: "Kurta",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872665/pexels-photo-8872665.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872665/pexels-photo-8872665.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0021",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 35,
+    tags: ["kurta", "chikankari", "festive"],
+    colors: ["White"]
+  },
+  {
+    _id: "trad22",
+    name: "Maroon Silk Festive Kurta",
+    brand: "Sojanya",
+    description: "Rich maroon silk kurta with subtle embroidery for celebrations and puja.",
+    price: 1499,
+    match: 93,
+    category: "Kurta",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0022",
+    material: "Silk Blend",
+    fit: "Regular",
+    stock: 28,
+    tags: ["kurta", "silk", "maroon"],
+    colors: ["Maroon"]
+  },
+  {
+    _id: "trad23",
+    name: "Olive Green Casual Kurta",
+    brand: "Anokhi",
+    description: "Relaxed olive green kurta perfect for casual ethnic styling.",
+    price: 849,
+    match: 89,
+    category: "Kurta",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872670/pexels-photo-8872670.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872670/pexels-photo-8872670.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0023",
+    material: "Cotton",
+    fit: "Relaxed",
+    stock: 40,
+    tags: ["kurta", "olive", "casual"],
+    colors: ["Olive"]
+  },
+
+  // ========== MORE SHORT KURTA (was 1) ==========
+  {
+    _id: "fus20",
+    name: "Blue Printed Short Kurta",
+    brand: "Manyavar",
+    description: "Trendy blue printed short kurta for parties and casual ethnic events.",
+    price: 1399,
+    match: 90,
+    category: "Short Kurta",
+    style: "Party Wear",
+    imageUrl: "https://images.pexels.com/photos/8872670/pexels-photo-8872670.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872670/pexels-photo-8872670.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FUS-0020",
+    material: "Cotton Silk",
+    fit: "Regular",
+    stock: 30,
+    tags: ["short-kurta", "printed", "party"],
+    colors: ["Blue"]
+  },
+  {
+    _id: "fus21",
+    name: "Black Embroidered Short Kurta",
+    brand: "Ethnix by Raymond",
+    description: "Sophisticated black short kurta with minimal embroidery for evening parties.",
+    price: 1899,
+    match: 93,
+    category: "Short Kurta",
+    style: "Party Wear",
+    imageUrl: "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FUS-0021",
+    material: "Silk Blend",
+    fit: "Slim",
+    stock: 22,
+    tags: ["short-kurta", "black", "embroidered"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE KURTA SHIRT (was 1) ==========
+  {
+    _id: "fus22",
+    name: "Beige Mandarin Collar Kurta Shirt",
+    brand: "Fabindia",
+    description: "Casual beige kurta shirt with mandarin collar for daily indo-western styling.",
+    price: 1199,
+    match: 89,
+    category: "Kurta Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/8872665/pexels-photo-8872665.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872665/pexels-photo-8872665.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FUS-0022",
+    material: "Cotton Linen",
+    fit: "Regular",
+    stock: 45,
+    tags: ["kurta-shirt", "mandarin", "indo-western"],
+    colors: ["Beige"]
+  },
+  {
+    _id: "fus23",
+    name: "White Linen Kurta Shirt",
+    brand: "Anokhi",
+    description: "Breathable white linen kurta shirt for summer casual and beach vacations.",
+    price: 999,
+    match: 90,
+    category: "Kurta Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/8872670/pexels-photo-8872670.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872670/pexels-photo-8872670.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FUS-0023",
+    material: "Linen",
+    fit: "Relaxed",
+    stock: 55,
+    tags: ["kurta-shirt", "linen", "summer"],
+    colors: ["White"]
+  },
+
+  // ========== MORE BLAZERS (was 3, need 5+) ==========
+  {
+    _id: "form33",
+    name: "Black Slim Fit Velvet Blazer",
+    brand: "Raymond",
+    description: "Luxurious black velvet blazer for evening parties and receptions.",
+    price: 7999,
+    match: 96,
+    category: "Blazer",
+    style: "Party Wear",
+    imageUrl: "https://images.pexels.com/photos/2955376/pexels-photo-2955376.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/2955376/pexels-photo-2955376.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0033",
+    material: "Velvet",
+    fit: "Slim",
+    stock: 12,
+    tags: ["blazer", "velvet", "party"],
+    colors: ["Black"]
+  },
+  {
+    _id: "form34",
+    name: "Beige Cotton Casual Blazer",
+    brand: "H&M",
+    description: "Relaxed beige cotton blazer for smart-casual and weekend dressing.",
+    price: 3999,
+    match: 91,
+    category: "Blazer",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0034",
+    material: "Cotton Blend",
+    fit: "Regular",
+    stock: 20,
+    tags: ["blazer", "beige", "casual"],
+    colors: ["Beige"]
+  },
+  {
+    _id: "form35",
+    name: "Maroon Slim Fit Blazer",
+    brand: "Peter England",
+    description: "Bold maroon blazer for cocktail parties and festive celebrations.",
+    price: 4999,
+    match: 94,
+    category: "Blazer",
+    style: "Party Wear",
+    imageUrl: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0035",
+    material: "Poly Viscose",
+    fit: "Slim",
+    stock: 16,
+    tags: ["blazer", "maroon", "party"],
+    colors: ["Maroon"]
+  },
+
+  // ========== MORE CO-ORDS (was 1) ==========
+  {
+    _id: "cas200",
+    name: "Olive Green Shirt & Shorts Co-ord Set",
+    brand: "Roadster",
+    description: "Matching olive green co-ord set with shirt and shorts for vacation styling.",
+    price: 1299,
+    match: 90,
+    category: "Co-ords",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1232459/pexels-photo-1232459.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1232459/pexels-photo-1232459.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0200",
+    material: "Cotton",
+    fit: "Relaxed",
+    stock: 35,
+    tags: ["co-ords", "olive", "vacation"],
+    colors: ["Olive"]
+  },
+  {
+    _id: "cas201",
+    name: "Navy Blue Printed Co-ord Set",
+    brand: "H&M",
+    description: "Tropical printed navy co-ord set with shirt and pants for resort wear.",
+    price: 1599,
+    match: 88,
+    category: "Co-ords",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1124468/pexels-photo-1124468.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1124468/pexels-photo-1124468.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0201",
+    material: "Viscose",
+    fit: "Relaxed",
+    stock: 30,
+    tags: ["co-ords", "printed", "resort"],
+    colors: ["Navy"]
+  },
+
+  // ========== MORE BANDHGALA (was 1+1) ==========
+  {
+    _id: "fus30",
+    name: "Navy Blue Silk Bandhgala",
+    brand: "Manyavar",
+    description: "Regal navy silk bandhgala for wedding receptions and formal ethnic events.",
+    price: 5999,
+    match: 95,
+    category: "Bandhgala",
+    style: "Party Wear",
+    imageUrl: "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FUS-0030",
+    material: "Silk Blend",
+    fit: "Tailored",
+    stock: 15,
+    tags: ["bandhgala", "navy", "wedding"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "fus31",
+    name: "Black Velvet Bandhgala Jacket",
+    brand: "Raymond",
+    description: "Premium black velvet bandhgala jacket for grand celebrations.",
+    price: 6499,
+    match: 96,
+    category: "Bandhgala Jacket",
+    style: "Party Wear",
+    imageUrl: "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FUS-0031",
+    material: "Velvet",
+    fit: "Tailored",
+    stock: 10,
+    tags: ["bandhgala", "velvet", "grand"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE T-SHIRTS (varied colors for recommendation engine) ==========
+  {
+    _id: "cas150",
+    name: "Maroon Solid Crew Neck T-Shirt",
+    brand: "Mufti",
+    description: "Premium maroon cotton T-shirt for a bold casual look.",
+    price: 499,
+    match: 90,
+    category: "T-Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0150",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 80,
+    tags: ["tshirt", "maroon", "solid"],
+    colors: ["Maroon"]
+  },
+  {
+    _id: "cas151",
+    name: "Navy Blue V-Neck T-Shirt",
+    brand: "Jockey",
+    description: "Classic navy blue V-neck T-shirt in soft combed cotton.",
+    price: 599,
+    match: 92,
+    category: "T-Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0151",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 90,
+    tags: ["tshirt", "navy", "v-neck"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "cas152",
+    name: "Grey Melange Round Neck T-Shirt",
+    brand: "HRX",
+    description: "Versatile grey melange T-shirt that pairs with everything.",
+    price: 449,
+    match: 93,
+    category: "T-Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0152",
+    material: "Cotton Blend",
+    fit: "Regular",
+    stock: 100,
+    tags: ["tshirt", "grey", "basic"],
+    colors: ["Grey"]
+  },
+  {
+    _id: "cas153",
+    name: "Mustard Yellow Henley T-Shirt",
+    brand: "Roadster",
+    description: "Eye-catching mustard henley T-shirt for a fresh casual style.",
+    price: 549,
+    match: 88,
+    category: "T-Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1124468/pexels-photo-1124468.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1124468/pexels-photo-1124468.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0153",
+    material: "Cotton",
+    fit: "Slim",
+    stock: 55,
+    tags: ["tshirt", "mustard", "henley"],
+    colors: ["Yellow"]
+  },
+  {
+    _id: "cas154",
+    name: "Black Solid Round Neck T-Shirt",
+    brand: "Puma",
+    description: "Essential black T-shirt for layering or standalone casual looks.",
+    price: 699,
+    match: 95,
+    category: "T-Shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1813947/pexels-photo-1813947.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1813947/pexels-photo-1813947.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0154",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 120,
+    tags: ["tshirt", "black", "essential"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE CASUAL SHIRTS (varied colors) ==========
+  {
+    _id: "cas160",
+    name: "White Linen Casual Shirt",
+    brand: "H&M",
+    description: "Crisp white linen shirt for summer days and casual brunches.",
+    price: 1299,
+    match: 93,
+    category: "shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0160",
+    material: "Linen",
+    fit: "Regular",
+    stock: 50,
+    tags: ["shirt", "white", "linen"],
+    colors: ["White"]
+  },
+  {
+    _id: "cas161",
+    name: "Olive Green Oxford Shirt",
+    brand: "Zara",
+    description: "Smart olive green oxford shirt for smart-casual everyday wear.",
+    price: 1499,
+    match: 91,
+    category: "shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1232459/pexels-photo-1232459.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1232459/pexels-photo-1232459.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0161",
+    material: "Cotton Oxford",
+    fit: "Slim",
+    stock: 40,
+    tags: ["shirt", "olive", "oxford"],
+    colors: ["Olive"]
+  },
+  {
+    _id: "cas162",
+    name: "Navy Blue Printed Casual Shirt",
+    brand: "Wrogn",
+    description: "Trendy navy printed shirt for weekend outings and parties.",
+    price: 1199,
+    match: 89,
+    category: "shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0162",
+    material: "Cotton",
+    fit: "Slim",
+    stock: 45,
+    tags: ["shirt", "navy", "printed"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "cas163",
+    name: "Black Slim Fit Cotton Shirt",
+    brand: "US Polo Assn",
+    description: "Sharp black cotton shirt suitable for casual dinners and semi-formal events.",
+    price: 1399,
+    match: 92,
+    category: "shirt",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1813947/pexels-photo-1813947.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1813947/pexels-photo-1813947.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0163",
+    material: "Cotton",
+    fit: "Slim",
+    stock: 50,
+    tags: ["shirt", "black", "slim"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE JEANS (varied washes) ==========
+  {
+    _id: "cas170",
+    name: "Indigo Blue Regular Fit Jeans",
+    brand: "Wrangler",
+    description: "Classic indigo blue jeans with a comfortable regular fit.",
+    price: 1299,
+    match: 91,
+    category: "Jeans",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0170",
+    material: "Denim",
+    fit: "Regular",
+    stock: 70,
+    tags: ["jeans", "indigo", "regular"],
+    colors: ["Blue"]
+  },
+  {
+    _id: "cas171",
+    name: "Grey Slim Fit Denim Jeans",
+    brand: "Levis",
+    description: "Modern grey denim jeans for a contemporary casual outfit.",
+    price: 1799,
+    match: 90,
+    category: "Jeans",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0171",
+    material: "Denim",
+    fit: "Slim",
+    stock: 50,
+    tags: ["jeans", "grey", "slim"],
+    colors: ["Grey"]
+  },
+
+  // ========== MORE JACKETS ==========
+  {
+    _id: "cas180",
+    name: "Black Quilted Puffer Jacket",
+    brand: "Zara",
+    description: "Warm black puffer jacket for winter styling and layered looks.",
+    price: 2999,
+    match: 92,
+    category: "Jacket",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0180",
+    material: "Polyester",
+    fit: "Regular",
+    stock: 25,
+    tags: ["jacket", "puffer", "winter"],
+    colors: ["Black"]
+  },
+  {
+    _id: "cas181",
+    name: "Navy Windbreaker Jacket",
+    brand: "Nike",
+    description: "Lightweight navy windbreaker for outdoor activities and travel.",
+    price: 2499,
+    match: 89,
+    category: "Jacket",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0181",
+    material: "Nylon",
+    fit: "Regular",
+    stock: 30,
+    tags: ["jacket", "windbreaker", "navy"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "cas182",
+    name: "Brown Suede Biker Jacket",
+    brand: "Roadster",
+    description: "Rugged brown suede jacket for an edgy casual look.",
+    price: 3499,
+    match: 93,
+    category: "Jacket",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1232459/pexels-photo-1232459.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1232459/pexels-photo-1232459.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0182",
+    material: "Suede",
+    fit: "Slim",
+    stock: 18,
+    tags: ["jacket", "suede", "biker"],
+    colors: ["Brown"]
+  },
+
+  // ========== MORE CHINOS (khaki, black) ==========
+  {
+    _id: "cas190",
+    name: "Khaki Slim Fit Chinos",
+    brand: "US Polo Assn",
+    description: "Classic khaki chinos that work for casual Fridays and weekend outings.",
+    price: 1199,
+    match: 91,
+    category: "Chinos",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0190",
+    material: "Cotton Stretch",
+    fit: "Slim",
+    stock: 55,
+    tags: ["chinos", "khaki", "casual"],
+    colors: ["Khaki"]
+  },
+  {
+    _id: "cas191",
+    name: "Black Stretch Slim Chinos",
+    brand: "Zara",
+    description: "Sleek black chinos with stretch comfort for versatile styling.",
+    price: 1499,
+    match: 92,
+    category: "Chinos",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0191",
+    material: "Cotton Stretch",
+    fit: "Slim",
+    stock: 50,
+    tags: ["chinos", "black", "stretch"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE JOGGERS (navy, olive) ==========
+  {
+    _id: "cas195",
+    name: "Navy Blue Slim Fit Joggers",
+    brand: "Adidas",
+    description: "Athletic navy joggers with tapered fit for sports and casual wear.",
+    price: 1599,
+    match: 90,
+    category: "Joggers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0195",
+    material: "Polyester",
+    fit: "Slim",
+    stock: 45,
+    tags: ["joggers", "navy", "athletic"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "cas196",
+    name: "Olive Green Cargo Joggers",
+    brand: "Puma",
+    description: "Utility-style olive cargo joggers with multiple pockets.",
+    price: 1399,
+    match: 88,
+    category: "Joggers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0196",
+    material: "Cotton Blend",
+    fit: "Regular",
+    stock: 40,
+    tags: ["joggers", "olive", "cargo"],
+    colors: ["Olive"]
+  },
+  {
+    _id: "cas197",
+    name: "Black Track Pants with White Stripes",
+    brand: "Adidas",
+    description: "Classic black track pants with iconic white side stripes.",
+    price: 1799,
+    match: 91,
+    category: "Joggers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "CAS-0197",
+    material: "Polyester",
+    fit: "Regular",
+    stock: 55,
+    tags: ["trackpants", "black", "stripes"],
+    colors: ["Black"]
+  },
+
+  // ========== MORE FORMAL SHIRTS (varied colors) ==========
+  {
+    _id: "form40",
+    name: "Lavender Slim Fit Formal Shirt",
+    brand: "Arrow",
+    description: "Subtle lavender formal shirt for a fresh corporate look.",
+    price: 1499,
+    match: 90,
+    category: "Formal Shirt",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/3760514/pexels-photo-3760514.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3760514/pexels-photo-3760514.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0040",
+    material: "Cotton Blend",
+    fit: "Slim",
+    stock: 40,
+    tags: ["formal", "lavender", "office"],
+    colors: ["Pink"]
+  },
+  {
+    _id: "form41",
+    name: "Grey Checked Formal Shirt",
+    brand: "Van Heusen",
+    description: "Grey checked formal shirt for a smart office appearance.",
+    price: 1599,
+    match: 91,
+    category: "Formal Shirt",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "FORM-0041",
+    material: "Cotton",
+    fit: "Regular",
+    stock: 35,
+    tags: ["formal", "grey", "checked"],
+    colors: ["Grey"]
+  },
+
+  // ========== MORE SNEAKERS (for variety) ==========
+  {
+    _id: "shoe20",
+    name: "Olive Green Sports Sneakers",
+    brand: "Nike",
+    description: "Trendy olive green sneakers for active lifestyle and casual pairing.",
+    price: 4499,
+    match: 91,
+    category: "Sneakers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1240892/pexels-photo-1240892.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1240892/pexels-photo-1240892.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0020",
+    material: "Mesh/Rubber",
+    fit: "Regular",
+    stock: 28,
+    tags: ["sneakers", "olive", "sports"],
+    colors: ["Olive"]
+  },
+  {
+    _id: "shoe21",
+    name: "Red High-Top Sneakers",
+    brand: "Converse",
+    description: "Classic red high-top canvas sneakers for bold street style.",
+    price: 3499,
+    match: 89,
+    category: "Sneakers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1261004/pexels-photo-1261004.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1261004/pexels-photo-1261004.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0021",
+    material: "Canvas",
+    fit: "Regular",
+    stock: 35,
+    tags: ["sneakers", "red", "high-top"],
+    colors: ["Red"]
+  },
+
+  // ========== MORE KURTA PAJAMA ==========
+  {
+    _id: "trad30",
+    name: "Black Silk Kurta Pajama",
+    brand: "Tasva",
+    description: "Elegant black silk kurta pajama for evening festivities and celebrations.",
+    price: 1599,
+    match: 93,
+    category: "Kurta Pajama",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872667/pexels-photo-8872667.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0030",
+    material: "Silk Blend",
+    fit: "Regular",
+    stock: 30,
+    tags: ["kurta-pajama", "black", "festive"],
+    colors: ["Black"]
+  },
+  {
+    _id: "trad31",
+    name: "Beige Cotton Kurta Pajama",
+    brand: "Fabindia",
+    description: "Breezy beige cotton kurta pajama perfect for summer puja and daily wear.",
+    price: 899,
+    match: 90,
+    category: "Kurta Pajama",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872665/pexels-photo-8872665.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872665/pexels-photo-8872665.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0031",
+    material: "Cotton",
+    fit: "Relaxed",
+    stock: 45,
+    tags: ["kurta-pajama", "beige", "summer"],
+    colors: ["Beige"]
+  },
+
+  // ========== MORE LOAFERS / FORMAL SHOES ==========
+  {
+    _id: "shoe22",
+    name: "Navy Blue Suede Loafers",
+    brand: "Aldo",
+    description: "Stylish navy suede loafers for smart-casual dressing.",
+    price: 4999,
+    match: 91,
+    category: "Loafers",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1027130/pexels-photo-1027130.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1027130/pexels-photo-1027130.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0022",
+    material: "Suede",
+    fit: "Regular",
+    stock: 22,
+    tags: ["loafers", "navy", "suede"],
+    colors: ["Navy"]
+  },
+  {
+    _id: "shoe23",
+    name: "Tan Brogue Formal Shoes",
+    brand: "Clarks",
+    description: "Elegant tan brogue shoes with perforated detailing for formal occasions.",
+    price: 6999,
+    match: 94,
+    category: "Formal Shoes",
+    style: "Formal Wear",
+    imageUrl: "https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0023",
+    material: "Leather",
+    fit: "Regular",
+    stock: 18,
+    tags: ["formal", "brogue", "tan"],
+    colors: ["Brown"]
+  },
+
+  // ========== MORE ACCESSORIES (Wallet - new, Ties) ==========
+  {
+    _id: "acc20",
+    name: "Black Leather Bi-fold Wallet",
+    brand: "Tommy Hilfiger",
+    description: "Classic black leather wallet with multiple card slots and coin pocket.",
+    price: 1999,
+    match: 87,
+    category: "Bag",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/915915/pexels-photo-915915.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/915915/pexels-photo-915915.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0020",
+    material: "Leather",
+    fit: "One Size",
+    stock: 50,
+    tags: ["wallet", "leather", "black"],
+    colors: ["Black"]
+  },
+  {
+    _id: "acc21",
+    name: "Brown Leather Card Holder Wallet",
+    brand: "Woodland",
+    description: "Compact brown leather card holder for daily essentials.",
+    price: 899,
+    match: 85,
+    category: "Bag",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/2079438/pexels-photo-2079438.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/2079438/pexels-photo-2079438.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0021",
+    material: "Leather",
+    fit: "One Size",
+    stock: 60,
+    tags: ["wallet", "card-holder", "brown"],
+    colors: ["Brown"]
+  },
+
+  // ========== MORE BOOTS ==========
+  {
+    _id: "shoe24",
+    name: "Tan Suede Desert Boots",
+    brand: "Clarks",
+    description: "Iconic desert boots in tan suede for smart-casual and weekend styling.",
+    price: 5999,
+    match: 92,
+    category: "Boots",
+    style: "Casual Wear",
+    imageUrl: "https://images.pexels.com/photos/1308188/pexels-photo-1308188.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1308188/pexels-photo-1308188.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "SHOE-0024",
+    material: "Suede",
+    fit: "Regular",
+    stock: 20,
+    tags: ["boots", "desert", "tan"],
+    colors: ["Brown"]
+  },
+
+  // ========== MORE SHERWANI ==========
+  {
+    _id: "trad40",
+    name: "Gold Brocade Wedding Sherwani",
+    brand: "Manyavar",
+    description: "Opulent gold brocade sherwani designed for the groom on his big day.",
+    price: 12999,
+    match: 97,
+    category: "Sherwani",
+    style: "Traditional Wear",
+    imageUrl: "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/8872669/pexels-photo-8872669.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "TRAD-0040",
+    material: "Brocade Silk",
+    fit: "Royal Fit",
+    stock: 8,
+    tags: ["sherwani", "gold", "groom"],
+    colors: ["Gold"]
+  },
+
+  // ========== MORE WATCHES ==========
+  {
+    _id: "acc25",
+    name: "Blue Dial Leather Strap Watch",
+    brand: "Titan",
+    description: "Elegant blue dial watch with brown leather strap for daily wear.",
+    price: 2999,
+    match: 89,
+    category: "Watch",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/9978722/pexels-photo-9978722.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/9978722/pexels-photo-9978722.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0025",
+    material: "Leather/Steel",
+    fit: "One Size",
+    stock: 30,
+    tags: ["watch", "blue-dial", "leather"],
+    colors: ["Blue"]
+  },
+
+  // ========== MORE BELTS ==========
+  {
+    _id: "acc26",
+    name: "Black Textured Leather Belt",
+    brand: "Louis Philippe",
+    description: "Premium black textured leather belt for formal suits.",
+    price: 1999,
+    match: 90,
+    category: "Belt",
+    style: "Accessories",
+    imageUrl: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600",
+    images: [
+      "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"
+    ],
+    sku: "ACC-0026",
+    material: "Leather",
+    fit: "Regular",
+    stock: 35,
+    tags: ["belt", "black", "textured"],
+    colors: ["Black"]
   }
 ];

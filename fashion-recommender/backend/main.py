@@ -1,17 +1,21 @@
-import os
+import os  # reload: new HF token
 import json
 import logging
 import random
 import base64
 import io
+import time
+import asyncio
+import tempfile
 import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from datetime import datetime
 from typing import List, Optional
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Body, Query, Depends, status
 from pydantic import BaseModel, Field, BeforeValidator
 from dotenv import load_dotenv
+from gradio_client import Client as GradioClient, handle_file
 
 # Load environment variables
 env_path = Path(__file__).resolve().parent.parent / '.env.local'
@@ -56,6 +60,81 @@ if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY is not set.")
 else:
     client = genai.Client(api_key=GEMINI_API_KEY)
+
+# Configure HuggingFace (FREE image generation)
+HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
+if HUGGINGFACE_TOKEN:
+    logger.info("HuggingFace token configured (free image generation)")
+else:
+    logger.warning("HUGGINGFACE_TOKEN is not set - image generation will use fallback.")
+
+# Stock male model image for IDM-VTON virtual try-on
+STOCK_MODEL_DIR = os.path.join(os.path.dirname(__file__), "assets")
+STOCK_MODEL_PATH = os.path.join(STOCK_MODEL_DIR, "stock_male_model.jpg")
+STOCK_MODEL_URLS = [
+    "https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/example/human/Jensen.jpeg",
+    "https://huggingface.co/spaces/yisol/IDM-VTON/resolve/main/example/human/00034_00.jpg",
+]
+
+# Upper body categories that work with virtual try-on
+UPPER_BODY_KEYWORDS = [
+    "shirt", "top", "tee", "t-shirt", "kurta", "tunic", "blouse",
+    "jacket", "blazer", "coat", "bandhgala", "vest", "cardigan",
+    "hoodie", "sweater", "polo", "henley", "nehru",
+]
+
+def is_upper_body_garment(category: str) -> bool:
+    """Check if a product category is an upper body garment (suitable for virtual try-on)"""
+    cat_lower = (category or "").lower()
+    return any(kw in cat_lower for kw in UPPER_BODY_KEYWORDS)
+
+def ensure_stock_male_model() -> str:
+    """Get cached standing full-body male model image for virtual try-on.
+    If missing, generate one using FLUX text-to-image."""
+    if os.path.exists(STOCK_MODEL_PATH):
+        return STOCK_MODEL_PATH
+    
+    os.makedirs(STOCK_MODEL_DIR, exist_ok=True)
+    
+    # Try downloading from known sources first
+    for url in STOCK_MODEL_URLS:
+        try:
+            logger.info(f"Downloading stock male model from: {url}")
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+            img = img.resize((768, 1024), Image.Resampling.LANCZOS)
+            img.save(STOCK_MODEL_PATH, "JPEG", quality=95)
+            logger.info(f"Stock male model saved: {STOCK_MODEL_PATH}")
+            return STOCK_MODEL_PATH
+        except Exception as e:
+            logger.warning(f"Failed to download from {url}: {e}")
+            continue
+    
+    # Fallback: generate with FLUX
+    if HUGGINGFACE_TOKEN:
+        try:
+            logger.info("Generating stock male model image with FLUX...")
+            headers = {"Authorization": f"Bearer {HUGGINGFACE_TOKEN}", "Content-Type": "application/json"}
+            prompt = ("A full body photo of a young Indian male model, standing straight, front facing, "
+                      "arms slightly at sides, wearing a plain white t-shirt and blue jeans, "
+                      "neutral expression, white studio background, head to toe visible, "
+                      "fashion catalog style, clean lighting, high quality, 4k")
+            resp = requests.post(
+                "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+                headers=headers, json={"inputs": prompt}, timeout=180
+            )
+            if resp.status_code == 200 and "image" in resp.headers.get("content-type", ""):
+                img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+                img = img.resize((768, 1024), Image.Resampling.LANCZOS)
+                img.save(STOCK_MODEL_PATH, "JPEG", quality=95)
+                logger.info(f"Generated stock male model: {STOCK_MODEL_PATH}")
+                return STOCK_MODEL_PATH
+        except Exception as e:
+            logger.error(f"Failed to generate stock model: {e}")
+    
+    logger.error("Could not obtain stock male model image")
+    return None
 
 # --- Helper Functions ---
 
@@ -439,10 +518,7 @@ class GenerateLookRequest(BaseModel):
     items: List[dict]
     mainProductId: str
 
-# Hugging Face Token for Virtual Try-On
-HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
-# Segmind API Key for reliable Virtual Try-On
-SEGMIND_API_KEY = os.getenv("SEGMIND_API_KEY")
+# --- Image Helper Functions ---
 
 def download_image_as_base64(url: str) -> str:
     """Download image from URL and return as base64 string"""
@@ -453,10 +529,9 @@ def download_image_as_base64(url: str) -> str:
         
         # Handle base64 data URLs
         if clean_url.startswith("data:image"):
-            # Extract base64 part
             return clean_url.split(",")[1] if "," in clean_url else None
             
-        response = requests.get(clean_url, timeout=10)
+        response = requests.get(clean_url, timeout=15)
         response.raise_for_status()
         return base64.b64encode(response.content).decode()
     except Exception as e:
@@ -478,551 +553,388 @@ def download_image_pil(url: str) -> Image.Image:
                 return Image.open(io.BytesIO(img_bytes)).convert("RGBA")
             return None
             
-        response = requests.get(clean_url, timeout=10)
+        response = requests.get(clean_url, timeout=15)
         response.raise_for_status()
         return Image.open(io.BytesIO(response.content)).convert("RGBA")
     except Exception as e:
         logger.error(f"Failed to download image as PIL: {e}")
         return None
 
-async def call_segmind_tryon(person_image_url: str, garment_image_url: str, garment_category: str = "Upper body") -> str:
-    """
-    Call Segmind Try-On Diffusion API - Supports FULL BODY!
-    Categories: "Upper body", "Lower body", "Dress"
-    Cost: ~$0.011 per request
-    """
-    if not SEGMIND_API_KEY:
-        logger.error("SEGMIND_API_KEY not set")
-        return None
+# --- FREE AI Image Generation (HuggingFace + PIL) ---
+
+def generate_outfit_description_with_gemini(items: List[dict], gender: str = "person") -> str:
+    """Use Gemini to create a detailed outfit description for image generation.
+    Falls back to simple item names if Gemini is unavailable or rate-limited."""
+    if not client:
+        item_names = [item.get("name", "") for item in items if item.get("name")]
+        return ", ".join(item_names) if item_names else "a stylish outfit"
     
     try:
-        logger.info(f"Calling Segmind Try-On Diffusion API (category: {garment_category})...")
+        items_detail = []
+        for item in items:
+            name = item.get("name", "")
+            category = item.get("category", "")
+            color = item.get("color", "")
+            if name:
+                items_detail.append(f"{color} {name} ({category})".strip())
         
-        # Correct endpoint for Try-On Diffusion
-        url = "https://api.segmind.com/v1/try-on-diffusion"
+        items_text = ", ".join(items_detail)
         
-        headers = {
-            "x-api-key": SEGMIND_API_KEY,
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model_image": person_image_url,
-            "cloth_image": garment_image_url,
-            "category": garment_category,
-            "num_inference_steps": 35,
-            "guidance_scale": 2,
-            "seed": 42,
-            "base64": True
-        }
-        
-        logger.info(f"Segmind request to: {url}")
-        
-        response = requests.post(url, json=payload, headers=headers, timeout=120)
-        
-        logger.info(f"Segmind response status: {response.status_code}")
-        
-        if response.status_code == 200:
-            content_type = response.headers.get('content-type', '')
-            
-            if 'image' in content_type:
-                return base64.b64encode(response.content).decode()
-            else:
-                try:
-                    result = response.json()
-                    if isinstance(result, dict) and 'image' in result:
-                        return result['image']
-                    elif isinstance(result, str):
-                        return result
-                except:
-                    return base64.b64encode(response.content).decode()
-        elif response.status_code == 406:
-            logger.error(f"Segmind insufficient credits: {response.text}")
-            return None
-        else:
-            logger.error(f"Segmind error: {response.status_code} - {response.text}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Segmind try-on failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+        prompt = f"""You are a fashion stylist. Describe this outfit in one short sentence for an image prompt:
+{items_text}
+Include colors, materials and fit. Under 40 words. Output ONLY the description."""
 
-async def call_miragic_tryon(person_image_url: str, garment_image_url: str) -> str:
-    """
-    Call Miragic Virtual Try-On API - Full body support
-    """
-    if not HUGGINGFACE_TOKEN:
-        logger.error("HUGGINGFACE_TOKEN not set")
-        return None
-    
-    try:
-        from gradio_client import Client, handle_file
-        import tempfile
-        
-        os.environ["HF_TOKEN"] = HUGGINGFACE_TOKEN
-        logger.info("Connecting to Miragic Virtual Try-On...")
-        
-        person_img = download_image_pil(person_image_url)
-        garment_img = download_image_pil(garment_image_url)
-        
-        if not person_img or not garment_img:
-            logger.error("Failed to download images for Miragic")
-            return None
-        
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            person_img.convert("RGB").save(f.name, "PNG")
-            person_path = f.name
-            
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            garment_img.convert("RGB").save(f.name, "PNG")
-            garment_path = f.name
-        
-        client = Client("Miragic-AI/Miragic-Virtual-Try-On")
-        logger.info("Calling Miragic API...")
-        
-        # Try fn_index=0 (first function) since /tryon doesn't exist
-        try:
-            result = client.predict(
-                handle_file(person_path),
-                handle_file(garment_path),
-                fn_index=0
-            )
-        except Exception as e1:
-            logger.warning(f"fn_index=0 failed: {e1}, trying fn_index=1")
-            try:
-                result = client.predict(
-                    handle_file(person_path),
-                    handle_file(garment_path),
-                    fn_index=1
-                )
-            except Exception as e2:
-                logger.error(f"fn_index=1 also failed: {e2}")
-                return None
-        
-        logger.info(f"Miragic result: {result}")
-        
-        if result:
-            output_path = result[0] if isinstance(result, (tuple, list)) else result
-            if isinstance(output_path, str) and os.path.exists(output_path):
-                with open(output_path, "rb") as f:
-                    return base64.b64encode(f.read()).decode()
-        return None
-        
-    except Exception as e:
-        logger.error(f"Miragic try-on failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-# RapidAPI key for texelmoda (free tier: 100/month) - Full body virtual try-on!
-RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
-logger.info(f"RAPIDAPI_KEY loaded: {'Yes' if RAPIDAPI_KEY else 'No'}")
-
-def is_public_url(url: str) -> bool:
-    """Check if URL is a publicly accessible HTTP(S) URL (not base64 or local)"""
-    if not url:
-        return False
-    # Skip base64 data URLs
-    if url.startswith('data:'):
-        return False
-    # Skip localhost/local URLs
-    if 'localhost' in url or '127.0.0.1' in url:
-        return False
-    # Must be HTTP(S)
-    if url.startswith('http://') or url.startswith('https://'):
-        return True
-    return False
-
-async def call_texelmoda_tryon(person_image_url: str, garment_image_url: str) -> str:
-    """
-    Call texelmoda Virtual Try-On API via RapidAPI
-    FREE: 100 requests/month
-    Full body support!
-    NOTE: Requires publicly accessible image URLs (not base64)
-    """
-    if not RAPIDAPI_KEY:
-        logger.info("RAPIDAPI_KEY not set, skipping texelmoda")
-        return None
-    
-    # Check if both URLs are publicly accessible
-    if not is_public_url(person_image_url):
-        logger.info(f"texelmoda: Person image is not a public URL, skipping (starts with: {person_image_url[:30] if person_image_url else 'None'})")
-        return None
-    
-    if not is_public_url(garment_image_url):
-        logger.info(f"texelmoda: Garment image is not a public URL, skipping (starts with: {garment_image_url[:30] if garment_image_url else 'None'})")
-        return None
-    
-    try:
-        logger.info("Calling texelmoda Virtual Try-On API (FULL BODY)...")
-        
-        url = "https://try-on-diffusion.p.rapidapi.com/try-on-url"
-        
-        headers = {
-            "x-rapidapi-host": "try-on-diffusion.p.rapidapi.com",
-            "x-rapidapi-key": RAPIDAPI_KEY,
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "avatar_image_url": person_image_url,
-            "clothing_image_url": garment_image_url
-        }
-        
-        logger.info(f"texelmoda request to: {url}")
-        logger.info(f"texelmoda avatar URL: {person_image_url[:100]}...")
-        logger.info(f"texelmoda clothing URL: {garment_image_url[:100]}...")
-        
-        response = requests.post(url, json=payload, headers=headers, timeout=120)
-        
-        logger.info(f"texelmoda response status: {response.status_code}")
-        
-        if response.status_code == 200:
-            content_type = response.headers.get('content-type', '')
-            if 'image' in content_type:
-                return base64.b64encode(response.content).decode()
-            else:
-                try:
-                    result = response.json()
-                    if isinstance(result, dict) and 'image' in result:
-                        return result['image']
-                except:
-                    return base64.b64encode(response.content).decode()
-        else:
-            logger.error(f"texelmoda error: {response.status_code} - {response.text}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"texelmoda try-on failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-async def call_kolors_tryon(person_image_url: str, garment_image_url: str) -> str:
-    """
-    Call Kolors Virtual Try-On API for FULL BODY try-on
-    Returns base64 encoded image or None on failure
-    """
-    if not HUGGINGFACE_TOKEN:
-        logger.error("HUGGINGFACE_TOKEN not set")
-        return None
-    
-    try:
-        from gradio_client import Client, handle_file
-        import tempfile
-        
-        os.environ["HF_TOKEN"] = HUGGINGFACE_TOKEN
-        
-        logger.info("Connecting to Kolors Virtual Try-On (Full Body)...")
-        
-        # Download images
-        person_img = download_image_pil(person_image_url)
-        garment_img = download_image_pil(garment_image_url)
-        
-        if not person_img or not garment_img:
-            logger.error("Failed to download person or garment image")
-            return None
-        
-        # Save to temp files
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as person_file:
-            person_img.convert("RGB").save(person_file.name, "PNG")
-            person_path = person_file.name
-            
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as garment_file:
-            garment_img.convert("RGB").save(garment_file.name, "PNG")
-            garment_path = garment_file.name
-        
-        logger.info(f"Saved temp files: person={person_path}, garment={garment_path}")
-        
-        # Connect to Kolors Virtual Try-On Space
-        client = Client("Kwai-Kolors/Kolors-Virtual-Try-On")
-        
-        logger.info("Calling Kolors Virtual Try-On API...")
-        result = client.predict(
-            person_img=handle_file(person_path),
-            garment_img=handle_file(garment_path),
-            seed=42,
-            randomize_seed=False,
-            api_name="/tryon"
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt
         )
         
-        logger.info(f"Kolors result: {result}")
-        
-        # Result is typically a tuple (output_image_path, seed)
-        if result and len(result) > 0:
-            output_path = result[0] if isinstance(result, tuple) else result
-            
-            with open(output_path, "rb") as f:
-                img_bytes = f.read()
-                return base64.b64encode(img_bytes).decode()
-        
-        return None
+        description = response.text.strip().strip('"')
+        logger.info(f"Gemini outfit description: {description}")
+        return description
         
     except Exception as e:
-        logger.error(f"Kolors try-on failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+        logger.error(f"Gemini description failed (likely rate limit): {e}")
+        # Fallback: build description from item names directly
+        parts = []
+        for item in items:
+            color = item.get("color", "")
+            name = item.get("name", "")
+            if name:
+                parts.append(f"{color} {name}".strip())
+        return ", ".join(parts) if parts else "a stylish fashion outfit"
 
-async def call_huggingface_tryon(person_image_url: str, garment_image_url: str) -> str:
+
+def generate_body_with_huggingface(outfit_description: str, gender: str = "person") -> str:
     """
-    Call Hugging Face virtual try-on API (IDM-VTON - Upper Body)
-    Returns base64 encoded image or None on failure
+    Generate a full-body fashion photo using HuggingFace FREE Inference API.
+    Tries multiple free models with automatic fallback.
+    Returns base64 encoded image or None.
     """
     if not HUGGINGFACE_TOKEN:
         logger.error("HUGGINGFACE_TOKEN not set")
         return None
     
+    # Build prompt matching the spec format
+    prompt = (
+        f"A realistic full body fashion photo of a {gender} model standing, head to toe, "
+        f"wearing {outfit_description}, "
+        f"full body, full length, standing pose, studio lighting, "
+        f"fashion photography, ultra high quality, sharp focus, 4k"
+    )
+    
+    logger.info(f"HuggingFace image prompt: {prompt[:200]}...")
+    
+    headers = {
+        "Authorization": f"Bearer {HUGGINGFACE_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    # Models to try with their provider base URLs (in order of quality)
+    model_configs = [
+        ("black-forest-labs/FLUX.1-schnell", "https://router.huggingface.co/hf-inference/models"),
+        ("stabilityai/stable-diffusion-xl-base-1.0", "https://router.huggingface.co/hf-inference/models"),
+        ("black-forest-labs/FLUX.1-dev", "https://router.huggingface.co/hf-inference/models"),
+    ]
+    
+    for model_id, base_url in model_configs:
+        logger.info(f"Trying HuggingFace model: {model_id}")
+        
+        for attempt in range(3):  # Max 3 attempts per model (for cold starts)
+            try:
+                url = f"{base_url}/{model_id}"
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    json={"inputs": prompt},
+                    timeout=180  # 3 min timeout
+                )
+                
+                logger.info(f"HuggingFace response: {response.status_code} (model: {model_id}, attempt: {attempt+1})")
+                
+                if response.status_code == 200:
+                    content_type = response.headers.get("content-type", "")
+                    if "image" in content_type:
+                        img_b64 = base64.b64encode(response.content).decode()
+                        logger.info(f"Image generated with {model_id}! ({len(img_b64)} chars)")
+                        return img_b64
+                    else:
+                        # Sometimes HF returns JSON even on 200
+                        logger.warning(f"Got non-image content-type: {content_type}")
+                        try:
+                            data = response.json()
+                            if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
+                                logger.warning("Model returned text instead of image")
+                        except:
+                            pass
+                        break  # Try next model
+                
+                elif response.status_code == 503:
+                    # Model is loading (cold start) - wait and retry
+                    try:
+                        data = response.json()
+                        wait_time = min(data.get("estimated_time", 20), 60)
+                        logger.info(f"Model {model_id} is loading, waiting {wait_time:.0f}s...")
+                        time.sleep(wait_time)
+                        continue  # Retry this model
+                    except:
+                        logger.info(f"Model loading, waiting 20s...")
+                        time.sleep(20)
+                        continue
+                
+                elif response.status_code == 429:
+                    logger.warning(f"Rate limited on {model_id}, trying next model...")
+                    break  # Try next model
+                
+                else:
+                    error_text = response.text[:300] if response.text else "No details"
+                    logger.error(f"HuggingFace error {response.status_code}: {error_text}")
+                    break  # Try next model
+                    
+            except requests.exceptions.Timeout:
+                logger.error(f"HuggingFace timeout for {model_id}")
+                break  # Try next model
+            except Exception as e:
+                logger.error(f"HuggingFace exception: {e}")
+                break  # Try next model
+    
+    logger.error("All HuggingFace models failed")
+    return None
+
+
+def overlay_face_on_body(body_image_b64: str, user_face_url: str) -> str:
+    """
+    Overlay user's face onto the generated body image using LOCAL PIL.
+    Creates a circular face cutout with feathered edges and soft border.
+    100% FREE - no external API needed.
+    
+    - body_image_b64: Base64 encoded generated body image
+    - user_face_url: User's profile photo URL or data URI
+    Returns base64 encoded final image or None.
+    """
     try:
-        from gradio_client import Client, handle_file
-        import tempfile
-        import httpx
+        logger.info("Performing local face overlay with PIL...")
         
-        # Set HF token as environment variable for gradio_client
-        os.environ["HF_TOKEN"] = HUGGINGFACE_TOKEN
+        # 1. Load the generated body image
+        body_bytes = base64.b64decode(body_image_b64)
+        body_img = Image.open(io.BytesIO(body_bytes)).convert("RGBA")
+        body_w, body_h = body_img.size
+        logger.info(f"Body image size: {body_w}x{body_h}")
         
-        logger.info("Connecting to Hugging Face IDM-VTON...")
-        
-        # Download images to temporary files
-        person_img = download_image_pil(person_image_url)
-        garment_img = download_image_pil(garment_image_url)
-        
-        if not person_img or not garment_img:
-            logger.error("Failed to download person or garment image")
+        # 2. Load user's face image
+        user_img = download_image_pil(user_face_url)
+        if not user_img:
+            logger.error("Failed to load user face image")
             return None
         
-        # Save to temp files
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as person_file:
-            person_img.convert("RGB").save(person_file.name, "PNG")
-            person_path = person_file.name
-            
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as garment_file:
-            garment_img.convert("RGB").save(garment_file.name, "PNG")
-            garment_path = garment_file.name
+        user_img = user_img.convert("RGBA")
+        uw, uh = user_img.size
+        logger.info(f"User image size: {uw}x{uh}")
         
-        logger.info(f"Saved temp files: person={person_path}, garment={garment_path}")
+        # 3. Crop face region (center of user photo, assuming portrait/selfie)
+        face_size = min(uw, uh)
+        left = (uw - face_size) // 2
+        top_crop = max(0, int(uh * 0.02))  # Slightly below very top
         
-        # Connect to Hugging Face Space (token is read from HF_TOKEN env var)
-        client = Client("yisol/IDM-VTON")
+        # Ensure crop stays in bounds
+        if top_crop + face_size > uh:
+            face_size = uh - top_crop
+        if left + face_size > uw:
+            face_size = min(face_size, uw - left)
         
-        # Call the API
-        logger.info("Calling IDM-VTON API...")
-        result = client.predict(
-            dict={"background": handle_file(person_path), "layers": [], "composite": None},
+        face_crop = user_img.crop((left, top_crop, left + face_size, top_crop + face_size))
+        
+        # 4. Create circular mask with feathered (soft) edges
+        mask = Image.new("L", (face_size, face_size), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        
+        # Draw filled circle with small padding
+        pad = max(2, int(face_size * 0.02))
+        mask_draw.ellipse((pad, pad, face_size - pad, face_size - pad), fill=255)
+        
+        # Apply Gaussian blur for soft feathered edge
+        blur_radius = max(2, int(face_size * 0.04))
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+        
+        # 5. Size the face to fit the head area of the body image
+        # In a full-body fashion photo, the head is roughly 13-17% of image width
+        target_face_size = int(body_w * 0.16)
+        
+        face_resized = face_crop.resize((target_face_size, target_face_size), Image.Resampling.LANCZOS)
+        mask_resized = mask.resize((target_face_size, target_face_size), Image.Resampling.LANCZOS)
+        
+        # 6. Position: centered horizontally, near top of body image
+        face_x = (body_w - target_face_size) // 2
+        face_y = int(body_h * 0.035)  # ~3.5% from top
+        
+        # 7. Create a soft white border/glow behind the face
+        border_padding = 4
+        border_size = target_face_size + (border_padding * 2)
+        border_img = Image.new("RGBA", (border_size, border_size), (0, 0, 0, 0))
+        border_draw = ImageDraw.Draw(border_img)
+        border_draw.ellipse(
+            (0, 0, border_size, border_size), 
+            fill=(255, 255, 255, 180)
+        )
+        # Soften border edge
+        border_alpha = border_img.split()[3]
+        border_alpha = border_alpha.filter(ImageFilter.GaussianBlur(radius=3))
+        border_img.putalpha(border_alpha)
+        
+        # 8. Paste border, then face onto body
+        body_img.paste(border_img, (face_x - border_padding, face_y - border_padding), border_img)
+        body_img.paste(face_resized, (face_x, face_y), mask_resized)
+        
+        # 9. Convert to RGB JPEG and return as base64
+        output = body_img.convert("RGB")
+        buffered = io.BytesIO()
+        output.save(buffered, format="JPEG", quality=92)
+        result_b64 = base64.b64encode(buffered.getvalue()).decode()
+        
+        logger.info(f"Face overlay completed successfully ({len(result_b64)} chars)")
+        return result_b64
+        
+    except Exception as e:
+        logger.error(f"Face overlay failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def virtual_try_on_idm_vton(garment_image_url: str, garment_description: str) -> str:
+    """
+    Virtual try-on using IDM-VTON (FREE HuggingFace Space).
+    Uses the ACTUAL product image so clothes look exactly like the real product.
+    
+    - garment_image_url: URL or data URI of the product image
+    - garment_description: Text description of the garment (e.g. "Blue Slim Fit Shirt")
+    Returns base64 encoded result image or None.
+    """
+    garment_path = None
+    try:
+        logger.info("=== IDM-VTON Virtual Try-On START ===")
+        
+        # 1. Get stock male model image
+        model_path = ensure_stock_male_model()
+        if not model_path:
+            logger.error("No stock model image available")
+            return None
+        
+        # 2. Download garment (product) image to temp file
+        logger.info(f"Downloading garment image...")
+        garment_img = download_image_pil(garment_image_url)
+        if not garment_img:
+            logger.error("Failed to download garment image")
+            return None
+        
+        garment_path = os.path.join(tempfile.gettempdir(), f"garment_{int(time.time())}.jpg")
+        garment_img.convert("RGB").save(garment_path, "JPEG", quality=95)
+        logger.info(f"Garment saved: {garment_path} ({garment_img.size})")
+        
+        # 3. Call IDM-VTON Space via Gradio API (FREE, runs on ZeroGPU)
+        logger.info("Connecting to IDM-VTON Space (free virtual try-on)...")
+        vton_client = GradioClient("yisol/IDM-VTON", token=HUGGINGFACE_TOKEN)
+        
+        logger.info("Sending try-on request (may take 1-2 minutes)...")
+        # Submit job and wait with timeout
+        job = vton_client.submit(
+            dict={"background": handle_file(model_path), "layers": [], "composite": None},
             garm_img=handle_file(garment_path),
-            garment_des="A stylish fashion garment",
-            is_checked=True,
-            is_checked_crop=False,
+            garment_des=garment_description or "garment",
+            is_checked=True,        # Auto-mask
+            is_checked_crop=True,    # Auto-crop & paste back to preserve full body
             denoise_steps=30,
             seed=42,
             api_name="/tryon"
         )
         
-        logger.info(f"IDM-VTON result: {result}")
+        # Wait up to 3 minutes, then give up
+        result = job.result(timeout=300)  # 5 min timeout for busy queue
         
-        # Result is typically a tuple with the output image path
+        # 4. Process result - tuple of (output_image_path, masked_image_path)
         if result and len(result) > 0:
-            output_path = result[0] if isinstance(result, tuple) else result
+            output_path = result[0]
+            logger.info(f"IDM-VTON output received: {output_path}")
             
-            # Read the output image
-            with open(output_path, "rb") as f:
-                img_bytes = f.read()
-                return base64.b64encode(img_bytes).decode()
+            output_img = Image.open(output_path).convert("RGB")
+            buffered = io.BytesIO()
+            output_img.save(buffered, format="JPEG", quality=92)
+            result_b64 = base64.b64encode(buffered.getvalue()).decode()
+            
+            logger.info(f"=== IDM-VTON Virtual Try-On COMPLETE ({len(result_b64)} chars) ===")
+            return result_b64
         
+        logger.error("IDM-VTON returned empty result")
         return None
         
     except Exception as e:
-        logger.error(f"Hugging Face try-on failed: {e}")
+        logger.error(f"IDM-VTON failed: {e}")
         import traceback
         traceback.print_exc()
         return None
+    finally:
+        # Cleanup temp garment file
+        try:
+            if garment_path and os.path.exists(garment_path):
+                os.remove(garment_path)
+        except:
+            pass
 
-def create_fallback_composition(user_img_url: str, main_product: dict, items: List[dict]) -> str:
-    """Create a fallback composition image when AI try-on fails"""
+
+def create_fallback_composition(items: List[dict], user_img_url: str = None) -> str:
+    """Create a fallback grid composition when AI generation fails"""
     width, height = 1200, 800
     canvas = Image.new('RGB', (width, height), (248, 249, 250))
     draw = ImageDraw.Draw(canvas)
     
-    # Add title
-    draw.text((width // 2 - 150, 20), "YOUR OUTFIT LOOK", fill=(50, 50, 50))
+    draw.text((width // 2 - 100, 20), "YOUR OUTFIT LOOK", fill=(50, 50, 50))
     
-    # 1. Place User Image (Left Side)
-    user_img = download_image_pil(user_img_url) if user_img_url else None
+    # Place user image on left
+    if user_img_url:
+        user_img = download_image_pil(user_img_url)
+        if user_img:
+            user_img.thumbnail((350, 600), Image.Resampling.LANCZOS)
+            uw, uh = user_img.size
+            canvas.paste(user_img, (50, (height - uh) // 2), user_img if user_img.mode == 'RGBA' else None)
     
-    if user_img:
-        u_width, u_height = user_img.size
-        aspect = u_width / u_height
-        target_h = height - 150
-        target_w = int(target_h * aspect)
-        if target_w > width * 0.4:
-            target_w = int(width * 0.4)
-            target_h = int(target_w / aspect)
-        user_resized = user_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-        y_pos = (height - target_h) // 2 + 30
-        x_pos = 50
-        canvas.paste(user_resized, (x_pos, y_pos), user_resized if user_resized.mode == 'RGBA' else None)
-        draw.text((x_pos, y_pos - 25), "YOUR PROFILE", fill=(100, 100, 100))
-    else:
-        draw.rectangle([50, 100, 400, 650], fill=(220, 220, 220), outline=(200, 200, 200))
-        draw.text((150, 370), "No Profile Photo", fill=(150, 150, 150))
-    
-    # 2. Place Main Product
-    main_product_img = None
-    if main_product and main_product.get("imageUrl"):
-        main_product_img = download_image_pil(main_product["imageUrl"])
-    
-    current_x = int(width * 0.5)
+    # Place outfit items on right
+    current_x = 450
     current_y = 80
-    
-    if main_product_img:
-        main_product_img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-        canvas.paste(main_product_img, (current_x, current_y), main_product_img if main_product_img.mode == 'RGBA' else None)
-        draw.text((current_x, current_y + 310), "SELECTED ITEM", fill=(0, 120, 0))
-        current_y += 350
-    
-    # 3. Matching Items
-    draw.text((current_x, current_y), "MATCHING ITEMS", fill=(80, 80, 80))
-    current_y += 30
-    
-    item_x = current_x
-    for idx, item in enumerate(items[:4]):
-        item_url = item.get("image")
-        if item_url:
-            img = download_image_pil(item_url)
-            if img:
-                img.thumbnail((150, 150), Image.Resampling.LANCZOS)
-                x_offset = (idx % 2) * 170
-                y_offset = (idx // 2) * 170
-                canvas.paste(img, (item_x + x_offset, current_y + y_offset), img if img.mode == 'RGBA' else None)
-    
-    # Convert to Base64
-    buffered = io.BytesIO()
-    canvas.save(buffered, format="JPEG", quality=85)
-    return base64.b64encode(buffered.getvalue()).decode()
-
-def create_full_outfit_composition(tryon_image_b64: str, all_items: List[dict], used_garment_id: str = None) -> str:
-    """
-    Create a full outfit composition showing:
-    - The try-on result (user wearing one garment) - LARGE on left
-    - All other selected items displayed on the right side
-    """
-    width, height = 1400, 900
-    canvas = Image.new('RGB', (width, height), (255, 255, 255))
-    draw = ImageDraw.Draw(canvas)
-    
-    # 1. Place Try-On Image (Left Side - Large)
-    if tryon_image_b64:
-        try:
-            tryon_img = Image.open(io.BytesIO(base64.b64decode(tryon_image_b64)))
-            
-            # Make the try-on image large (60% of width)
-            tryon_width = int(width * 0.58)
-            tryon_height = height - 40
-            
-            # Resize maintaining aspect ratio
-            t_w, t_h = tryon_img.size
-            aspect = t_w / t_h
-            
-            if aspect > (tryon_width / tryon_height):
-                new_w = tryon_width
-                new_h = int(new_w / aspect)
-            else:
-                new_h = tryon_height
-                new_w = int(new_h * aspect)
-            
-            tryon_resized = tryon_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-            
-            # Center vertically
-            x_pos = 20
-            y_pos = (height - new_h) // 2
-            
-            canvas.paste(tryon_resized, (x_pos, y_pos))
-            
-            # Add label
-            draw.rectangle([x_pos, y_pos + new_h + 5, x_pos + new_w, y_pos + new_h + 30], fill=(139, 92, 246))
-            draw.text((x_pos + 10, y_pos + new_h + 8), "AI VIRTUAL TRY-ON", fill=(255, 255, 255))
-        except Exception as e:
-            logger.error(f"Failed to place try-on image: {e}")
-    
-    # 2. Place Selected Items on Right Side (Vertically stacked)
-    right_x = int(width * 0.62)
-    right_width = width - right_x - 20
-    
-    # Title for items section
-    draw.text((right_x, 15), "YOUR COMPLETE OUTFIT", fill=(50, 50, 50))
-    
-    # Filter out the garment that was used for try-on
-    other_items = []
-    for item in all_items:
-        item_id = item.get("id") or item.get("_id")
-        if item_id != used_garment_id:
-            other_items.append(item)
-    
-    # If no other items, show all items
-    if not other_items:
-        other_items = all_items
-    
-    # Calculate item sizes based on count
-    item_count = min(len(other_items), 4)
-    if item_count == 0:
-        return base64.b64encode(io.BytesIO(canvas.tobytes()).getvalue()).decode()
-    
-    # Layout items in a 2x2 or 1xN grid
-    item_size = min(200, (right_width - 20) // 2)
-    start_y = 50
-    
-    for idx, item in enumerate(other_items[:4]):
+    for idx, item in enumerate(items[:6]):
         item_url = item.get("image") or item.get("imageUrl")
         if item_url:
             img = download_image_pil(item_url)
             if img:
-                # Resize to fit
-                img.thumbnail((item_size, item_size), Image.Resampling.LANCZOS)
+                img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                col = idx % 3
+                row = idx // 3
+                x = current_x + col * 230
+                y = current_y + row * 280
                 
-                # Calculate position (2 columns)
-                col = idx % 2
-                row = idx // 2
-                x = right_x + col * (item_size + 15)
-                y = start_y + row * (item_size + 60)
+                draw.rectangle([x - 5, y - 5, x + 205, y + 245], fill=(255, 255, 255), outline=(230, 230, 230))
+                iw, ih = img.size
+                ix = x + (200 - iw) // 2
+                iy = y + (200 - ih) // 2
+                canvas.paste(img, (ix, iy), img if img.mode == 'RGBA' else None)
                 
-                # Draw item background
-                draw.rectangle([x - 5, y - 5, x + item_size + 5, y + item_size + 45], 
-                             fill=(248, 249, 250), outline=(230, 230, 230))
-                
-                # Paste image centered in its box
-                img_w, img_h = img.size
-                img_x = x + (item_size - img_w) // 2
-                img_y = y + (item_size - img_h) // 2
-                
-                if img.mode == 'RGBA':
-                    canvas.paste(img, (img_x, img_y), img)
-                else:
-                    canvas.paste(img, (img_x, img_y))
-                
-                # Add item name
-                item_name = item.get("name", "Item")[:20]
-                draw.text((x, y + item_size + 5), item_name, fill=(60, 60, 60))
-                
-                # Add price if available
-                price = item.get("price")
-                if price:
-                    draw.text((x, y + item_size + 22), f"₹{price}", fill=(22, 163, 74))
+                item_name = item.get("name", "Item")[:25]
+                draw.text((x, y + 210), item_name, fill=(60, 60, 60))
     
-    # Add footer
-    draw.rectangle([0, height - 35, width, height], fill=(249, 250, 251))
-    draw.text((width // 2 - 100, height - 25), "Complete Your Look Today!", fill=(100, 100, 100))
-    
-    # Convert to Base64
     buffered = io.BytesIO()
-    canvas.save(buffered, format="PNG", quality=95)
+    canvas.save(buffered, format="JPEG", quality=85)
     return base64.b64encode(buffered.getvalue()).decode()
+
 
 @app.post("/generate-look")
 async def generate_look(request: GenerateLookRequest):
-    logger.info(f"Generating look for user {request.userId} with {len(request.items)} items")
-    logger.info(f"Main product ID: {request.mainProductId}")
+    """
+    Generate Look Flow (100% FREE):
+    Priority 1: IDM-VTON virtual try-on (uses ACTUAL product image → accurate clothes)
+    Priority 2: HuggingFace text-to-image (generic but full body)
+    Priority 3: Fallback composition with real product images
+    """
+    logger.info(f"=== GENERATE LOOK START ===")
+    logger.info(f"User: {request.userId}, Items: {len(request.items)}, MainProduct: {request.mainProductId}")
     
     # 1. Fetch User
     try:
@@ -1034,256 +946,297 @@ async def generate_look(request: GenerateLookRequest):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # 2. Fetch Main Product - handle both ObjectId and string IDs
-    main_product = None
-    garment_image_url = None
-    
-    try:
-        # Try as ObjectId first
-        if len(request.mainProductId) == 24:
-            main_product = await product_collection.find_one({"_id": ObjectId(request.mainProductId)})
-    except Exception as e:
-        logger.warning(f"Could not parse mainProductId as ObjectId: {e}")
-    
-    # If not found, try to get garment image from items
-    if not main_product:
-        logger.info("Main product not found in DB, trying to get image from items")
-        # Look for garment image in the items array
-        for item in request.items:
-            if item.get("image"):
-                garment_image_url = item.get("image")
-                logger.info(f"Using garment image from items: {garment_image_url[:50]}...")
-                break
-    else:
-        garment_image_url = main_product.get("imageUrl")
-    
     user_image_url = user.get("image")
+    gender_text = "male"  # Men's shopping project
     
-    if not user_image_url:
-        logger.warning("User has no profile image, using fallback composition")
-        img_b64 = create_fallback_composition(None, main_product, request.items)
-        return {
-            "message": "Please upload a profile photo for virtual try-on",
-            "imageUrl": f"data:image/jpeg;base64,{img_b64}"
-        }
+    # 2. Find main product info (from items or DB)
+    main_product = None
+    for item in request.items:
+        item_id = item.get("id") or item.get("_id") or ""
+        if str(item_id) == str(request.mainProductId):
+            main_product = item
+            break
     
-    if not garment_image_url:
-        logger.warning("No garment image available")
-        img_b64 = create_fallback_composition(user_image_url, None, request.items)
-        return {
-            "message": "No garment image available",
-            "imageUrl": f"data:image/jpeg;base64,{img_b64}"
-        }
+    # If main product not in items, fetch from DB
+    if not main_product:
+        try:
+            db_product = await product_collection.find_one({"_id": ObjectId(request.mainProductId)})
+            if db_product:
+                main_product = {
+                    "id": str(db_product["_id"]),
+                    "name": db_product.get("name", ""),
+                    "category": db_product.get("category", ""),
+                    "color": db_product.get("colors", [""])[0] if db_product.get("colors") else "",
+                    "image": db_product.get("imageUrl", ""),
+                }
+        except Exception as e:
+            logger.warning(f"Could not fetch main product: {e}")
     
-    # Detect garment category for Segmind API
-    garment_category = "Upper body"  # Default
-    
-    # Get product category from main_product or items
-    product_category = ""
-    product_name = ""
+    main_product_image = None
+    main_product_category = ""
+    main_product_name = ""
     
     if main_product:
-        product_category = str(main_product.get("category", "")).lower()
-        product_name = str(main_product.get("name", "")).lower()
-    elif request.items:
-        for item in request.items:
-            if item.get("id") == request.mainProductId or item.get("image") == garment_image_url:
-                product_category = str(item.get("category", "")).lower()
-                product_name = str(item.get("name", "")).lower()
-                break
+        main_product_image = main_product.get("image") or main_product.get("imageUrl") or ""
+        main_product_category = main_product.get("category", "")
+        main_product_name = main_product.get("name", "")
+        logger.info(f"Main product: {main_product_name} ({main_product_category}), has image: {bool(main_product_image)}")
     
-    # Determine Segmind category based on product type
-    lower_body_keywords = ["pants", "pant", "jeans", "trousers", "shorts", "skirt", "leggings", "bottom", "lower"]
-    dress_keywords = ["dress", "gown", "jumpsuit", "romper", "overall", "onepiece"]
-    
-    combined_text = f"{product_category} {product_name}"
-    
-    if any(keyword in combined_text for keyword in dress_keywords):
-        garment_category = "Dress"
-    elif any(keyword in combined_text for keyword in lower_body_keywords):
-        garment_category = "Lower body"
-    else:
-        garment_category = "Upper body"
-    
-    logger.info(f"Detected garment category: {garment_category} (from: {combined_text[:50]})")
-    
-    # Pre-download images to base64 to avoid external URL access issues
-    # This ensures AI services can access images even from rate-limited sources
-    logger.info("Pre-downloading user and garment images as base64...")
-    
-    user_image_b64 = download_image_as_base64(user_image_url)
-    garment_image_b64 = download_image_as_base64(garment_image_url)
-    
-    # Convert to data URLs for AI services
-    if user_image_b64:
-        user_image_for_api = f"data:image/png;base64,{user_image_b64}"
-        logger.info("User image successfully converted to base64")
-    else:
-        user_image_for_api = user_image_url
-        logger.warning("Could not convert user image to base64, using URL directly")
-    
-    if garment_image_b64:
-        garment_image_for_api = f"data:image/png;base64,{garment_image_b64}"
-        logger.info("Garment image successfully converted to base64")
-    else:
-        garment_image_for_api = garment_image_url
-        logger.warning("Could not convert garment image to base64, using URL directly")
-    
-    # 2. Try Segmind Virtual Try-On FIRST (paid, but reliable full body)
-    logger.info(f"Attempting virtual try-on with Segmind API...")
-    result_b64 = await call_segmind_tryon(user_image_for_api, garment_image_for_api, garment_category)
-    
-    if result_b64:
-        logger.info("Segmind try-on successful!")
-        
-        # If there are multiple items selected, create a full outfit composition
-        if len(request.items) > 1:
-            logger.info(f"Creating full outfit composition with {len(request.items)} items")
-            used_garment_id = request.mainProductId
-            full_outfit_b64 = create_full_outfit_composition(result_b64, request.items, used_garment_id)
-            return {
-                "message": "Full body outfit look generated with AI virtual try-on",
-                "imageUrl": f"data:image/png;base64,{full_outfit_b64}"
-            }
-        
-        # Single item - return the try-on result
-        return {
-            "message": "Look generated with Segmind AI virtual try-on",
-            "imageUrl": f"data:image/png;base64,{result_b64}"
-        }
-    
-    # 3. Try texelmoda (RapidAPI - 100 free/month, FULL BODY)
-    logger.info("Segmind failed, trying texelmoda...")
-    result_b64 = await call_texelmoda_tryon(user_image_for_api, garment_image_for_api)
-    
-    if result_b64:
-        logger.info("texelmoda try-on successful!")
-        if len(request.items) > 1:
-            used_garment_id = request.mainProductId
-            full_outfit_b64 = create_full_outfit_composition(result_b64, request.items, used_garment_id)
-            return {
-                "message": "Full body outfit look generated with texelmoda AI",
-                "imageUrl": f"data:image/png;base64,{full_outfit_b64}"
-            }
-        return {
-            "message": "Look generated with texelmoda AI virtual try-on (full body)",
-            "imageUrl": f"data:image/png;base64,{result_b64}"
-        }
-    
-    # 4. Try Miragic (Hugging Face - separate quota)
-    logger.info("texelmoda failed, trying Miragic...")
-    result_b64 = await call_miragic_tryon(user_image_for_api, garment_image_for_api)
-    
-    if result_b64:
-        logger.info("Miragic try-on successful!")
-        if len(request.items) > 1:
-            used_garment_id = request.mainProductId
-            full_outfit_b64 = create_full_outfit_composition(result_b64, request.items, used_garment_id)
-            return {
-                "message": "Full body outfit look generated with Miragic AI",
-                "imageUrl": f"data:image/png;base64,{full_outfit_b64}"
-            }
-        return {
-            "message": "Look generated with Miragic AI virtual try-on",
-            "imageUrl": f"data:image/png;base64,{result_b64}"
-        }
-    
-    # 5. Try Kolors (may have runtime issues)
-    logger.info("Miragic failed, trying Kolors...")
-    result_b64 = await call_kolors_tryon(user_image_for_api, garment_image_for_api)
-    
-    if result_b64:
-        logger.info("Kolors try-on successful!")
-        if len(request.items) > 1:
-            used_garment_id = request.mainProductId
-            full_outfit_b64 = create_full_outfit_composition(result_b64, request.items, used_garment_id)
-            return {
-                "message": "Full body outfit look generated with Kolors AI",
-                "imageUrl": f"data:image/png;base64,{full_outfit_b64}"
-            }
-        return {
-            "message": "Look generated with Kolors AI virtual try-on",
-            "imageUrl": f"data:image/png;base64,{result_b64}"
-        }
-    
-    # 6. Fallback to IDM-VTON (Upper Body Only)
-    logger.info("Kolors failed, trying IDM-VTON (upper body)...")
-    result_b64 = await call_huggingface_tryon(user_image_for_api, garment_image_for_api)
-    
-    if result_b64:
-        logger.info("IDM-VTON try-on successful (upper body only)")
-        
-        # If there are multiple items selected, create a full outfit composition
-        if len(request.items) > 1:
-            logger.info(f"Creating full outfit composition with {len(request.items)} items")
-            used_garment_id = request.mainProductId
-            full_outfit_b64 = create_full_outfit_composition(result_b64, request.items, used_garment_id)
-            return {
-                "message": "Full outfit look generated with AI virtual try-on",
-                "imageUrl": f"data:image/png;base64,{full_outfit_b64}"
-            }
-        
-        # Single item - just return the try-on result
-        return {
-            "message": "Look generated successfully with AI virtual try-on",
-            "imageUrl": f"data:image/png;base64,{result_b64}"
-        }
-    
-    # 7. Fallback to Imagen (Text-based generation)
-    logger.info("All virtual try-on methods failed, trying Imagen...")
-    
-    try:
-        if client:
-            # Analyze user appearance
-            user_description = "a fashion model"
-            try:
-                user_image_bytes = requests.get(user_image_url.strip().strip("`'\" "), timeout=5).content
-                analyze_response = client.models.generate_content(
-                    model='gemini-1.5-flash',
-                    contents=[
-                        types.Part.from_bytes(data=user_image_bytes, mime_type="image/jpeg"),
-                        "Describe this person's physical appearance briefly for a fashion photo prompt."
-                    ]
-                )
-                if analyze_response.text:
-                    user_description = analyze_response.text.strip()
-            except:
-                pass
-            
-            # Build outfit description
-            outfit_desc = []
-            if main_product:
-                outfit_desc.append(f"{main_product.get('colors', [''])[0]} {main_product.get('name', '')}")
-            for item in request.items:
-                outfit_desc.append(f"{item.get('color', '')} {item.get('name', '')}")
-            
-            full_prompt = (
-                f"A realistic full-body fashion photo of {user_description} wearing {', '.join(outfit_desc)}. "
-                "Modern studio setting, high quality, photorealistic."
+    # ======= STRATEGY 1: IDM-VTON Virtual Try-On (ACTUAL product image) =======
+    # Always try with real product image for accurate clothing appearance
+    if main_product_image:
+        logger.info(f"Step 1: Trying IDM-VTON virtual try-on (product: {main_product_name})...")
+        try:
+            garment_desc = f"{main_product.get('color', '')} {main_product_name}".strip()
+            vton_b64 = await asyncio.to_thread(
+                virtual_try_on_idm_vton,
+                main_product_image,
+                garment_desc
             )
             
-            imagen_response = client.models.generate_images(
-                model='imagen-3.0-generate-001',
-                prompt=full_prompt,
-                config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio="3:4")
-            )
-            
-            if imagen_response.generated_images:
-                img_bytes = imagen_response.generated_images[0].image.image_bytes
+            if vton_b64:
+                logger.info("=== GENERATE LOOK COMPLETE (IDM-VTON) ===")
                 return {
-                    "message": "Look generated with AI image generation",
-                    "imageUrl": f"data:image/jpeg;base64,{base64.b64encode(img_bytes).decode()}"
+                    "message": "Virtual try-on complete! The outfit matches the real product.",
+                    "imageUrl": f"data:image/jpeg;base64,{vton_b64}"
                 }
-    except Exception as e:
-        logger.error(f"Imagen fallback failed: {e}")
+            else:
+                logger.warning("IDM-VTON failed, falling back to text-to-image...")
+        except Exception as e:
+            logger.error(f"IDM-VTON error: {e}")
+    else:
+        logger.info("No product image available, using text-to-image...")
     
-    # 4. Final fallback - Composition
-    logger.info("All AI methods failed, using composition fallback")
-    img_b64 = create_fallback_composition(user_image_url, main_product, request.items)
+    # ======= STRATEGY 2: Text-to-Image with HuggingFace (FREE) =======
+    logger.info("Step 2: Creating outfit description for text-to-image...")
+    outfit_description = generate_outfit_description_with_gemini(request.items, gender_text)
+    logger.info(f"Outfit description: {outfit_description}")
+    
+    logger.info("Step 3: Generating body image with HuggingFace (free)...")
+    body_b64 = generate_body_with_huggingface(outfit_description, gender_text)
+    
+    if body_b64:
+        logger.info("=== GENERATE LOOK COMPLETE (text-to-image) ===")
+        return {
+            "message": "Your AI outfit look is ready!",
+            "imageUrl": f"data:image/jpeg;base64,{body_b64}"
+        }
+    
+    # ======= STRATEGY 3: Fallback Composition =======
+    logger.error("All AI generation failed, using fallback composition")
+    img_b64 = create_fallback_composition(request.items, user_image_url)
     return {
-        "message": "AI try-on unavailable, showing outfit composition",
+        "message": "AI models are busy. Here's your outfit board with real product images.",
         "imageUrl": f"data:image/jpeg;base64,{img_b64}"
     }
+
+# --- Color Coordination System ---
+
+# Colors that go well together (fashion rules)
+COLOR_COORDINATION = {
+    "black":    ["white", "grey", "red", "beige", "cream", "navy", "blue", "khaki", "olive", "maroon", "pink"],
+    "white":    ["black", "navy", "blue", "grey", "beige", "red", "green", "brown", "olive", "maroon", "khaki"],
+    "navy":     ["white", "beige", "cream", "khaki", "grey", "brown", "tan", "light blue", "pink", "red"],
+    "blue":     ["white", "beige", "grey", "brown", "khaki", "cream", "navy", "tan", "black"],
+    "grey":     ["black", "white", "navy", "blue", "burgundy", "maroon", "pink", "red", "beige"],
+    "beige":    ["navy", "white", "brown", "olive", "black", "blue", "cream", "maroon", "green"],
+    "brown":    ["white", "beige", "cream", "navy", "olive", "blue", "khaki", "tan", "green"],
+    "red":      ["black", "white", "navy", "grey", "blue", "beige", "cream"],
+    "green":    ["beige", "brown", "white", "khaki", "cream", "black", "navy", "tan"],
+    "olive":    ["beige", "brown", "white", "cream", "khaki", "black", "navy", "tan"],
+    "maroon":   ["beige", "white", "grey", "cream", "navy", "khaki", "black"],
+    "khaki":    ["navy", "white", "brown", "olive", "black", "blue", "maroon", "green", "beige"],
+    "cream":    ["navy", "brown", "olive", "black", "blue", "maroon", "green", "beige"],
+    "pink":     ["navy", "grey", "white", "black", "blue", "beige"],
+    "yellow":   ["navy", "grey", "white", "black", "blue", "brown"],
+    "charcoal": ["white", "beige", "cream", "blue", "navy", "pink", "red", "khaki"],
+}
+
+# Occasion → style mapping for smarter picks
+OCCASION_STYLE_MAP = {
+    "Casual":  {"tops": ["T-Shirt", "shirt", "Kurta Shirt", "Short Kurta"], "bottoms": ["Jeans", "Chinos", "Joggers"], "shoes": ["Sneakers", "Loafers"], "outerwear": ["Jacket"]},
+    "Office":  {"tops": ["Formal Shirt", "shirt"], "bottoms": ["Formal Trousers", "Chinos"], "shoes": ["Formal Shoes", "Loafers"], "outerwear": ["Blazer"]},
+    "Evening": {"tops": ["Formal Shirt", "Kurta", "shirt"], "bottoms": ["Formal Trousers", "Chinos"], "shoes": ["Formal Shoes", "Loafers", "Mojaris"], "outerwear": ["Blazer", "Bandhgala"]},
+}
+
+def extract_color_keyword(product_color: str) -> str:
+    """Extract a matchable color keyword from product color string like 'Navy Blue Slim Fit'"""
+    if not product_color:
+        return ""
+    color_lower = product_color.lower()
+    # Check longer color names first
+    for color in ["light blue", "dark blue", "navy blue"]:
+        if color in color_lower:
+            return color.split()[0] if color == "navy blue" else color
+    for color in COLOR_COORDINATION.keys():
+        if color in color_lower:
+            return color
+    return ""
+
+def get_matching_colors(color: str) -> list:
+    """Get list of colors that coordinate well with the given color"""
+    key = extract_color_keyword(color)
+    if key and key in COLOR_COORDINATION:
+        return COLOR_COORDINATION[key]
+    # Universal safe colors if unknown
+    return ["black", "white", "grey", "navy", "beige"]
+
+def color_match_score(product_colors: list, target_colors: list) -> int:
+    """Score how well a product's color matches the target coordinating colors"""
+    if not product_colors:
+        return 0
+    product_color = product_colors[0].lower() if product_colors else ""
+    score = 0
+    for target in target_colors:
+        if target in product_color:
+            score += 2  # Direct match
+            break
+    # Neutral colors always get a small bonus
+    for neutral in ["black", "white", "grey", "navy"]:
+        if neutral in product_color:
+            score += 1
+            break
+    return score
+
+def get_product_type(category: str, db_tops, db_bottoms, db_outerwear, db_shoes, db_accessories) -> str:
+    """Map a DB category to a type label"""
+    if category in db_tops: return "Top"
+    if category in db_bottoms: return "Bottom"
+    if category in db_outerwear: return "Outerwear"
+    if category in db_shoes: return "Footwear"
+    if category in db_accessories: return "Accessory"
+    return "Other"
+
+def smart_color_select(candidates: list, main_product: dict, required_types: list, 
+                        occasion: str, db_tops, db_bottoms, db_outerwear, db_shoes, db_accessories) -> list:
+    """
+    Smart fallback: select ONE item per required type, prioritizing:
+    1. Color coordination with main product
+    2. Occasion appropriateness
+    3. Price range similarity
+    """
+    main_color = ""
+    if main_product.get("colors"):
+        main_color = main_product["colors"][0] if isinstance(main_product["colors"], list) else str(main_product.get("colors", ""))
+    elif main_product.get("name"):
+        main_color = main_product["name"]  # Color is often in the name
+    
+    matching_colors = get_matching_colors(main_color)
+    main_price = main_product.get("price", 0)
+    occasion_styles = OCCASION_STYLE_MAP.get(occasion, {})
+    
+    # Group candidates by type
+    type_buckets = {}
+    for c in candidates:
+        ptype = get_product_type(c["category"], db_tops, db_bottoms, db_outerwear, db_shoes, db_accessories)
+        if ptype not in type_buckets:
+            type_buckets[ptype] = []
+        type_buckets[ptype].append(c)
+    
+    selected = []
+    tips = []
+    
+    for req_type in required_types:
+        bucket = type_buckets.get(req_type, [])
+        if not bucket:
+            continue
+        
+        # Score each candidate
+        scored = []
+        for item in bucket:
+            score = 0
+            item_colors = item.get("colors", [])
+            
+            # Color coordination (0-3 points)
+            score += color_match_score(item_colors, matching_colors)
+            
+            # Occasion match (0-2 points)
+            if occasion_styles:
+                type_key = {"Top": "tops", "Bottom": "bottoms", "Footwear": "shoes", "Outerwear": "outerwear"}.get(req_type, "")
+                if type_key and item["category"] in occasion_styles.get(type_key, []):
+                    score += 2
+            
+            # Price similarity (0-1 point) - within 2x range
+            item_price = item.get("price", 0)
+            if main_price > 0 and item_price > 0:
+                ratio = item_price / main_price if main_price > 0 else 1
+                if 0.3 <= ratio <= 3.0:
+                    score += 1
+            
+            scored.append((score, item))
+        
+        # Sort by score descending, pick best
+        scored.sort(key=lambda x: x[0], reverse=True)
+        best = scored[0][1]
+        selected.append(best)
+        
+        # Generate a tip about why this was picked
+        best_color = best.get("colors", [""])[0] if best.get("colors") else ""
+        if best_color:
+            tips.append(f"{best_color} {best['name']} pairs well with your {main_color.split()[0] if main_color else 'chosen'} outfit.")
+    
+    if not tips:
+        tips = ["Color-coordinated outfit based on fashion rules.", "Balanced for style and occasion."]
+    
+    return selected, tips
+
+
+def try_huggingface_llm_recommend(main_product_str: str, candidate_list_str: str, 
+                                    occasion: str, gender: str, required_types: list) -> dict:
+    """
+    Backup LLM: Use HuggingFace free Inference API for outfit selection when Gemini is unavailable.
+    """
+    if not HUGGINGFACE_TOKEN:
+        return None
+    
+    try:
+        prompt = f"""You are a fashion stylist. Pick the best matching items for this outfit.
+
+Main product: {main_product_str}
+
+Candidates: {candidate_list_str}
+
+Select exactly ONE item per type: {', '.join(required_types)} for a {occasion} occasion ({gender}).
+Pick color-coordinated, style-matching items.
+
+Return ONLY valid JSON: {{"selected_ids": ["id1","id2","id3"], "style_tips": ["tip1","tip2"]}}"""
+        
+        response = requests.post(
+            "https://router.huggingface.co/hf-inference/models/HuggingFaceTB/SmolLM3-3B",
+            headers={
+                "Authorization": f"Bearer {HUGGINGFACE_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "inputs": prompt,
+                "parameters": {"max_new_tokens": 300, "temperature": 0.3, "return_full_text": False}
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            text = ""
+            if isinstance(data, list) and len(data) > 0:
+                text = data[0].get("generated_text", "")
+            elif isinstance(data, dict):
+                text = data.get("generated_text", "")
+            
+            # Try to extract JSON from response
+            if "{" in text and "}" in text:
+                json_str = text[text.index("{"):text.rindex("}") + 1]
+                result = json.loads(json_str)
+                if result.get("selected_ids"):
+                    logger.info(f"HuggingFace LLM selected: {result['selected_ids']}")
+                    return result
+        
+        logger.warning(f"HuggingFace LLM response: {response.status_code}")
+        return None
+        
+    except Exception as e:
+        logger.warning(f"HuggingFace LLM fallback failed: {e}")
+        return None
+
 
 @app.post("/recommend", response_model=RecommendationResponse)
 async def recommend_outfit(request: RecommendRequest):
@@ -1292,14 +1245,9 @@ async def recommend_outfit(request: RecommendRequest):
     gender = request.gender
     
     category = map_category(product.get("category") or "")
+    logger.info(f"=== RECOMMEND: {product.get('name')} ({category}) for {occasion} ===")
     
-    # 1. Identify candidate categories based on actual DB content
-    # DB Categories:
-    # Tops: "T-Shirt", "Formal Shirt", "shirt", "Kurta", "Short Kurta", "Kurta Shirt"
-    # Bottoms: "Jeans", "Chinos", "Joggers", "Formal Trousers"
-    # Outerwear: "Jacket", "Blazer", "Bandhgala", "Bandhgala Jacket"
-    # FullBody: "Sherwani", "Kurta Pajama", "Pathani Suit", "Dhoti Set", "Kurta Set", "Co-ords", "Suit", "Fusion Set", "Party Set"
-    
+    # DB Categories
     db_tops = ["T-Shirt", "Formal Shirt", "shirt", "Kurta", "Short Kurta", "Kurta Shirt"]
     db_bottoms = ["Jeans", "Chinos", "Joggers", "Formal Trousers"]
     db_outerwear = ["Jacket", "Blazer", "Bandhgala", "Bandhgala Jacket"]
@@ -1319,139 +1267,125 @@ async def recommend_outfit(request: RecommendRequest):
         complementary_categories = db_tops + db_bottoms + db_shoes + db_accessories
         required_types = ["Top", "Bottom", "Footwear", "Accessory"]
     elif category == "FullBody":
-        # For sets, we need shoes and accessories
         complementary_categories = db_shoes + db_accessories + db_outerwear
         required_types = ["Footwear", "Accessory"]
     else:
-        # Default fallback
         complementary_categories = db_tops + db_bottoms + db_shoes + db_accessories
         required_types = ["Top", "Bottom", "Footwear"]
     
-    # 2. Fetch candidates from DB
+    # Fetch more candidates for better selection
     candidate_query = {"category": {"$in": complementary_categories}}
+    candidate_docs = await product_collection.find(candidate_query).limit(100).to_list(100)
     
-    # Filter by gender if possible (simple heuristic)
-    if gender != "Unisex":
-        # This assumes products have a 'gender' field or we rely on the user to filter. 
-        # For now, we'll just fetch broadly to ensure we have candidates.
-        pass
-
-    candidate_docs = await product_collection.find(candidate_query).limit(60).to_list(60)
-    
-    # If no candidates found, fallback to existing logic (which fetches specific categories)
     if not candidate_docs:
-        # Fallback logic
-        recommendations = []
-        if category == "Tops":
-            bottoms = await product_collection.find({"category": {"$in": db_bottoms}}).limit(1).to_list(1)
-            shoes = await product_collection.find({"category": {"$in": db_shoes}}).limit(1).to_list(1)
-            acc = await product_collection.find({"category": {"$in": db_accessories}}).limit(1).to_list(1)
-            recommendations.extend(bottoms + shoes + acc)
-        elif category == "Bottoms":
-            tops = await product_collection.find({"category": {"$in": db_tops}}).limit(1).to_list(1)
-            shoes = await product_collection.find({"category": {"$in": db_shoes}}).limit(1).to_list(1)
-            acc = await product_collection.find({"category": {"$in": db_accessories}}).limit(1).to_list(1)
-            recommendations.extend(tops + shoes + acc)
-        else:
-             # Try to find anything
-            others = await product_collection.find({"category": {"$in": db_tops + db_bottoms}}).limit(3).to_list(3)
-            recommendations.extend(others)
-            
-        return {"items": recommendations, "explanation": "Matched based on simple category rules (fallback).", "style_tips": ["Try mixing textures!", "Balance loose and tight fits."]}
+        logger.warning("No candidates found in DB")
+        return {"items": [], "explanation": "No matching products found.", "style_tips": ["Add more products to the catalog."]}
 
-    # 3. Use Gemini to select best outfit
+    logger.info(f"Found {len(candidate_docs)} candidates across {len(set(c['category'] for c in candidate_docs))} categories")
+
+    # === STRATEGY 1: Gemini AI (best quality) ===
     try:
-        candidate_list_str = json.dumps([
-            {
-                "id": str(p["_id"]),
-                "name": p["name"],
-                "category": p["category"],
-                "color": p.get("colors", ["Unknown"])[0] if p.get("colors") else "Unknown",
-                "price": p.get("price", 0)
-            } 
-            for p in candidate_docs
-        ])
-        
-        main_product_str = json.dumps({
-            "name": product.get("name"),
-            "category": product.get("category"),
-            "color": product.get("colors", ["Unknown"])[0] if product.get("colors") else "Unknown",
-            "description": product.get("description", "")
-        })
-        
-        prompt = f"""
-        You are a professional fashion stylist.
-        I have a main product: {main_product_str}
-        
-        I have a list of candidate products:
-        {candidate_list_str}
-        
-        Your task is to create a SINGLE, COMPLETE outfit around the main product for a '{occasion}' occasion for {gender}.
-        
-        CRITICAL REQUIREMENT: You must select exactly ONE item from EACH of these missing types to complete the look: {', '.join(required_types)}.
-        For example, if the main product is a Top, you MUST select 1 Bottom, 1 Footwear, and 1 Accessory.
-        
-        The outfit must be color-coordinated and appropriate for the occasion.
-        
-        Return ONLY a valid JSON object with this structure:
-        {{
-            "selected_ids": ["id1", "id2", "id3"],
-            "style_tips": ["Tip 1", "Tip 2", "Tip 3"]
-        }}
-        Do not include any markdown formatting or explanations outside the JSON.
-        """
-        
         if client:
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=prompt
-            )
+            candidate_list_str = json.dumps([
+                {
+                    "id": str(p["_id"]),
+                    "name": p["name"],
+                    "category": p["category"],
+                    "color": p.get("colors", ["Unknown"])[0] if p.get("colors") else "Unknown",
+                    "price": p.get("price", 0)
+                } 
+                for p in candidate_docs
+            ])
+            
+            main_product_str = json.dumps({
+                "name": product.get("name"),
+                "category": product.get("category"),
+                "color": product.get("colors", ["Unknown"])[0] if product.get("colors") else "Unknown",
+                "description": product.get("description", "")
+            })
+            
+            prompt = f"""You are a professional fashion stylist.
+Main product: {main_product_str}
+
+Candidates: {candidate_list_str}
+
+Create a COMPLETE outfit for '{occasion}' occasion ({gender}).
+Select exactly ONE item per type: {', '.join(required_types)}.
+The outfit MUST be color-coordinated and occasion-appropriate.
+
+Return ONLY valid JSON:
+{{"selected_ids": ["id1", "id2", "id3"], "style_tips": ["Tip 1", "Tip 2", "Tip 3"]}}"""
+            
+            response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
             text = response.text.replace("```json", "").replace("```", "").strip()
             result = json.loads(text)
-        else:
-             # Mock AI response if key is missing (fallback)
-             logger.warning("Gemini client not initialized. Using random selection.")
-             result = {
-                 "selected_ids": [str(c["_id"]) for c in random.sample(candidate_docs, min(3, len(candidate_docs)))],
-                 "style_tips": ["This is a randomly generated suggestion as API key is missing."]
-             }
-        
-        selected_ids = result.get("selected_ids", [])
-        style_tips = result.get("style_tips", ["Great look!"])
-        
-        selected_products = [
-            p for p in candidate_docs if str(p["_id"]) in selected_ids
-        ]
-        
-        # Ensure we have at least 2 items
-        if len(selected_products) < 2:
-            raise Exception("AI selected too few items")
             
-        return {
-            "items": selected_products, 
-            "explanation": " ".join(style_tips),
-            "style_tips": style_tips
-        }
-
+            selected_products = [p for p in candidate_docs if str(p["_id"]) in result.get("selected_ids", [])]
+            
+            if len(selected_products) >= 2:
+                logger.info(f"Gemini selected {len(selected_products)} items")
+                return {
+                    "items": selected_products,
+                    "explanation": " ".join(result.get("style_tips", ["AI-styled outfit."])),
+                    "style_tips": result.get("style_tips", ["Great look!"])
+                }
+            else:
+                raise Exception("Gemini selected too few items")
     except Exception as e:
-        logger.error(f"Gemini error: {e}")
-        # Fallback to simple logic if AI fails
-        recommendations = []
-        if category == "Tops":
-            bottoms = await product_collection.find({"category": {"$in": db_bottoms}}).limit(3).to_list(3)
-            recommendations.extend(bottoms)
-        elif category == "Bottoms":
-            tops = await product_collection.find({"category": {"$in": db_tops}}).limit(3).to_list(3)
-            recommendations.extend(tops)
-        elif category == "Outerwear":
-            inner = await product_collection.find({"category": {"$in": db_tops}}).limit(2).to_list(2)
-            recommendations.extend(inner)
-        else:
-             # Try to find anything
-            others = await product_collection.find({"category": {"$in": db_tops + db_bottoms}}).limit(3).to_list(3)
-            recommendations.extend(others)
+        logger.warning(f"Gemini failed: {e}")
+
+    # === STRATEGY 2: HuggingFace free LLM backup ===
+    try:
+        logger.info("Trying HuggingFace LLM backup...")
+        candidate_list_str = json.dumps([
+            {"id": str(p["_id"]), "name": p["name"], "category": p["category"],
+             "color": p.get("colors", ["Unknown"])[0] if p.get("colors") else "Unknown"}
+            for p in candidate_docs[:30]  # Smaller list for smaller model
+        ])
+        main_product_str = json.dumps({
+            "name": product.get("name"), "category": product.get("category"),
+            "color": product.get("colors", ["Unknown"])[0] if product.get("colors") else "Unknown"
+        })
         
-        return {"items": recommendations, "explanation": "Matched based on style rules.", "style_tips": ["Classic combination."]}
+        hf_result = try_huggingface_llm_recommend(main_product_str, candidate_list_str, occasion, gender, required_types)
+        if hf_result:
+            selected_products = [p for p in candidate_docs if str(p["_id"]) in hf_result.get("selected_ids", [])]
+            if len(selected_products) >= 2:
+                logger.info(f"HF LLM selected {len(selected_products)} items")
+                return {
+                    "items": selected_products,
+                    "explanation": " ".join(hf_result.get("style_tips", ["AI-matched outfit."])),
+                    "style_tips": hf_result.get("style_tips", ["Stylish combination!"])
+                }
+    except Exception as e:
+        logger.warning(f"HF LLM backup failed: {e}")
+
+    # === STRATEGY 3: Smart color-coordinated fallback (no AI needed) ===
+    logger.info("Using smart color-matching fallback...")
+    selected, tips = smart_color_select(
+        candidate_docs, product, required_types, occasion,
+        db_tops, db_bottoms, db_outerwear, db_shoes, db_accessories
+    )
+    
+    if selected:
+        logger.info(f"Smart fallback selected {len(selected)} items: {[s['name'] for s in selected]}")
+        return {
+            "items": selected,
+            "explanation": " ".join(tips),
+            "style_tips": tips
+        }
+    
+    # === STRATEGY 4: Last resort - any items from each type ===
+    logger.warning("Last resort: picking any available items")
+    recommendations = []
+    for req_type in required_types:
+        type_cats = {"Top": db_tops, "Bottom": db_bottoms, "Footwear": db_shoes, 
+                     "Accessory": db_accessories, "Outerwear": db_outerwear}.get(req_type, [])
+        items = [c for c in candidate_docs if c["category"] in type_cats]
+        if items:
+            recommendations.append(random.choice(items))
+    
+    return {"items": recommendations, "explanation": "Basic outfit suggestion.", "style_tips": ["Mix and match to find your style!"]}
 
 # --- Seed Endpoint ---
 
